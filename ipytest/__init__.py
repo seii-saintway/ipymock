@@ -32,7 +32,14 @@ def get_test_funcs(**test_entries):
             self.__dict__.update(entries)
     m.obj = Object(**test_entries)
 
-    return dict(enumerate(m.collect()))
+    test_funcs = [m]
+    i = 0
+    while i < len(test_funcs):
+        if hasattr(test_funcs[i], 'collect'):
+            test_funcs += test_funcs.pop(i).collect()
+        else:
+            i += 1
+    return dict(enumerate(test_funcs))
 
 # Cell
 def print_result(idx, test_func, method_type):

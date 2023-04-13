@@ -12,9 +12,9 @@
 
 ## Pytest the Python Testfiles
 
-```
+```python
 import pluggy
-pm = pluggy.PluginManager('pytest', implprefix='pytest_')
+pm = pluggy.PluginManager('pytest')
 
 import _pytest.hookspec
 pm.add_hookspecs(_pytest.hookspec)
@@ -28,7 +28,7 @@ cfg.parse(args=[])
 pm.hook.pytest_cmdline_main(config=cfg)
 ```
 
-```
+```python
 import _pytest.config
 cfg = _pytest.config.get_config()
 cfg.parse(args=[])
@@ -37,7 +37,7 @@ cfg.pluginmanager.hook.pytest_cmdline_main(config=cfg)
 
 ## Pytest the Python Testcases within IPyNb Runtimes
 
-```
+```python
 # content of test_time.py
 
 import pytest
@@ -91,7 +91,7 @@ def test_timedistance_v3(a, b, expected):
     assert diff != expected
 ```
 
-```
+```python
 import _pytest.config
 cfg = _pytest.config.get_config()
 cfg.parse(args=[])
@@ -108,14 +108,14 @@ import py
 m = _pytest.python.Module.from_parent(parent=ss, fspath=py.path.local())
 ```
 
-```
+```python
 class Object(object):
     def __init__(self, **entries):
         self.__dict__.update(entries)
 m.obj = Object(**globals())
 ```
 
-```
+```python
 import _pytest.runner
 c = dict(enumerate(m.collect()))
 for i in c:
@@ -159,7 +159,7 @@ for i in c:
     <TestReport '::unittests::test_timedistance_v3[backward]' when='teardown' outcome='passed'>
 
 
-```
+```python
 for i, f in enumerate(m.collect()):
     print(f'idx = {i}')
     f.setup()
@@ -168,7 +168,7 @@ for i, f in enumerate(m.collect()):
 
 ### How to use the do-pytest?
 
-```
+```python
 import pytest
 
 @pytest.fixture
@@ -183,11 +183,11 @@ def test_fixture(my_fixture_1, my_fixture_2):
     assert my_fixture_1 == my_fixture_2
 ```
 
-```
+```python
 from ipytest import do
 ```
 
-```
+```python
 do(
     my_fixture_1=my_fixture_1,
     my_fixture_2=my_fixture_2,
