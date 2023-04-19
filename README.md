@@ -184,7 +184,7 @@ def test_fixture(my_fixture_1, my_fixture_2):
 ```
 
 ```python
-from ipytest import do
+from ipymock import do
 ```
 
 ```python

@@ -2,11 +2,11 @@
 SHELL := /bin/bash
 SRC = $(wildcard nbs/*.ipynb)
 
-all: ipytest docs
+all: ipymock docs test pypi
 
-ipytest: $(SRC)
+ipymock: $(SRC)
 	nbdev_build_lib
-	touch ipytest
+	touch ipymock
 
 sync:
 	nbdev_update_lib

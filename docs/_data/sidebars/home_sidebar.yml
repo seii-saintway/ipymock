@@ -12,7 +12,10 @@ entries:
     - output: web,pdf
       title: iPytest
       url: core.html
+    - output: web,pdf
+      title: Mock OpenAI API
+      url: mock.html
     output: web
-    title: ipytest
+    title: ipymock
   output: web
   title: Sidebar

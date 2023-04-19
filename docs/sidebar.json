@@ -1,6 +1,7 @@
 {
-  "ipytest": {
+  "ipymock": {
     "Overview": "/",
-    "iPytest": "core.html"
+    "iPytest": "core.html",
+    "Mock OpenAI API": "mock.html"
   }
 }

@@ -29,4 +29,6 @@ jobs:
         if [ -n "$(nbdev_diff_nbs)" ]; then echo -e "!!! Detected difference between the notebooks and the library"; false; fi
     - name: Run tests
       run: |
+        mkdir -p ~/.config/revChatGPT
+        echo {} > ~/.config/revChatGPT/config.json
         nbdev_test_nbs
