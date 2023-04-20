@@ -2,7 +2,8 @@
 
 __all__ = ['get_conversations', 'get_conversation', 'handle_conversation_detail', 'start_conversation',
            'generate_title', 'rename_title', 'delete_conversation', 'recover_conversation', 'clear_conversations',
-           'chat_gpt_base_url', 'common', 'attrdict', 'attributize', 'delta', 'mock_create', 'mock_openai']
+           'chat_gpt_base_url', 'common', 'attrdict', 'attributize', 'delta', 'mock_create', 'chat_delta',
+           'mock_chat_create', 'mock_openai']
 
 # Internal Cell
 from queue import Queue
@@ -212,6 +213,40 @@ def delta(prompt):
             'choices': [
                 {
                     'index': 0,
+                    'logprobs': None,
+                    'text': response[len(res):],
+                }
+            ],
+        })
+        res = response
+
+def mock_create(*args, **kwargs):
+    prompt = kwargs['prompt'].strip()
+
+    if kwargs.get('stream', False):
+        return delta(prompt)
+
+    response = ''
+    for response in start_conversation(prompt):
+        pass
+    return attributize({
+        'choices': [
+            {
+                'finish_reason': 'stop',
+                'index': 0,
+                'logprobs': None,
+                'text': response,
+            }
+        ],
+    })
+
+def chat_delta(prompt):
+    res = ''
+    for response in start_conversation(prompt):
+        yield attributize({
+            'choices': [
+                {
+                    'index': 0,
                     'delta': {
                         'content': response[len(res):],
                     }
@@ -220,15 +255,16 @@ def delta(prompt):
         })
         res = response
 
-def mock_create(*args, **kwargs):
+def mock_chat_create(*args, **kwargs):
     summarized_prompt = ''
     for message in kwargs['messages']:
         summarized_prompt += f"{message['role']}:\n\n{message['content']}\n\n\n"
     summarized_prompt.strip()
 
     if kwargs.get('stream', False):
-        return delta(summarized_prompt)
+        return chat_delta(summarized_prompt)
 
+    response = ''
     for response in start_conversation(summarized_prompt):
         pass
     return attributize({
@@ -250,4 +286,5 @@ import openai, pytest
 # Cell
 @pytest.fixture
 def mock_openai(monkeypatch):
-    monkeypatch.setattr(openai.ChatCompletion, 'create', mock_create)
+    monkeypatch.setattr(openai.Completion, 'create', mock_create)
+    monkeypatch.setattr(openai.ChatCompletion, 'create', mock_chat_create)

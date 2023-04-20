@@ -21,6 +21,8 @@ index = {"get_test_funcs": "core.ipynb",
          "attributize": "mock.ipynb",
          "delta": "mock.ipynb",
          "mock_create": "mock.ipynb",
+         "chat_delta": "mock.ipynb",
+         "mock_chat_create": "mock.ipynb",
          "mock_openai": "mock.ipynb"}
 
 modules = ["__init__.py",
