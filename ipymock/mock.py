@@ -5,20 +5,21 @@ __all__ = ['get_conversations', 'get_conversation', 'handle_conversation_detail'
            'chat_gpt_base_url', 'common', 'attrdict', 'attributize', 'delta', 'mock_create', 'mock_openai']
 
 # Internal Cell
+from queue import Queue
+
 class Common:
     chat_gpt_model = 'gpt-3.5-turbo'
     role_user = 'user'
     role_assistant = 'assistant'
 
     question_answer_map = {}
-    message_channel = []
-    exit_for_loop_channel = []
-    response_text_channel = []
-    conversation_done_channel = []
+    message_channel = Queue()
+    exit_for_loop_channel = Queue()
+    response_text_channel = Queue()
+    conversation_done_channel = Queue()
     parent_message_id = ''
     conversation_id = ''
-    reload_conversations_channel = []
-    current_node = None
+    reload_conversations_channel = Queue()
 
 # Internal Cell
 import json, os, requests, uuid
@@ -43,7 +44,7 @@ def get_conversation(conversation_id):
     current_node = conversation['current_node']
     common.parent_message_id = current_node
     handle_conversation_detail(current_node, conversation['mapping'])
-    common.exit_for_loop_channel.append(True)
+    common.exit_for_loop_channel.put(True)
 
 def handle_conversation_detail(current_node, mapping):
     conversation_detail = mapping[current_node]
@@ -57,13 +58,12 @@ def handle_conversation_detail(current_node, mapping):
     parts = message['content']['parts']
     if len(parts) > 0 and parts[0] != '':
         if message['author']['role'] == common.role_user:
-            common.message_channel.append(message)
+            common.message_channel.put(message)
 
 def start_conversation(content):
-    parent_message_id = common.parent_message_id
-    if parent_message_id == '' or common.conversation_id == '':
+    if common.parent_message_id == '' or common.conversation_id == '':
         common.conversation_id = ''
-        parent_message_id = str(uuid.uuid4())
+        common.parent_message_id = str(uuid.uuid4())
     response = requests.post(
         f'{chat_gpt_base_url}/conversation',
         headers = {
@@ -84,45 +84,42 @@ def start_conversation(content):
                     'parts': [content]
                 }
             }],
-            'parent_message_id': parent_message_id,
+            'parent_message_id': common.parent_message_id,
             'model': common.chat_gpt_model,
             'conversation_id': common.conversation_id,
-            'continue_text': 'continue'
+            'continue_text': ''
         }),
         stream=True
     )
 
-    # get it again from response
-    common.parent_message_id = ''
     temp_conversation_id = ''
-
     for line in response.iter_lines():
         if not line.startswith(b'data: '):
             continue
 
+        if line.endswith(b'[DONE]'):
+            common.conversation_done_channel.put(True)
+            continue
+
         make_conversation_response = json.loads(line.decode('utf-8')[len('data: '):])
-        if common.parent_message_id == '':
-            common.parent_message_id = make_conversation_response['message']['id']
+        if make_conversation_response is None:
+            continue
+        parts = make_conversation_response['message']['content']['parts']
+        if len(parts) > 0:
+            common.response_text_channel.put(parts[0])
+            yield parts[0]
         if common.conversation_id == '':
             temp_conversation_id = make_conversation_response['conversation_id']
-        if make_conversation_response is not None:
-            parts = make_conversation_response['message']['content']['parts']
-            if len(parts) > 0:
-                common.response_text_channel.append(parts[0])
-                yield parts[0]
-            if make_conversation_response['message']['end_turn'] == True:
-                common.conversation_done_channel.append(True)
-                break
-
-        if line.endswith(b'[DONE]'):
-            common.conversation_done_channel.append(True)
-            break
+        common.parent_message_id = make_conversation_response['message']['id']
+        if make_conversation_response['message']['end_turn'] == True:
+            common.conversation_done_channel.put(True)
+            continue
 
     if common.conversation_id == '' and temp_conversation_id != '':
         common.conversation_id = temp_conversation_id
         generate_title(common.conversation_id)
     else:
-        common.reload_conversations_channel.append(True)
+        common.reload_conversations_channel.put(True)
 
 def generate_title(conversation_id):
     requests.post(
@@ -177,8 +174,7 @@ def clear_conversations():
     requests.patch(f'{chat_gpt_base_url}/conversations', headers = {'Authorization': access_token}, data = {'is_visible': False})
 
     common.conversation_id = ''
-    common.current_node = None
-    common.reload_conversations_channel.append(True)
+    common.reload_conversations_channel.put(True)
 
 # Internal Cell
 # open the JSON file and read the conversation_id
