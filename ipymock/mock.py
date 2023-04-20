@@ -221,23 +221,29 @@ def delta(prompt):
         res = response
 
 def mock_create(*args, **kwargs):
-    prompt = kwargs['prompt'].strip()
+    prompts = []
+    if isinstance(kwargs['prompt'], str):
+        prompts = [kwargs['prompt']]
+    if isinstance(kwargs['prompt'], list):
+        prompts = kwargs['prompt']
+    prompts = [prompt.strip() for prompt in prompts]
 
     if kwargs.get('stream', False):
-        return delta(prompt)
+        return delta('\n'.join(prompts))
 
-    response = ''
-    for response in start_conversation(prompt):
-        pass
+    choices = []
+    for prompt in prompts:
+        response = ''
+        for response in start_conversation(prompt):
+            pass
+        choices.append({
+            'finish_reason': 'stop',
+            'index': 0,
+            'logprobs': None,
+            'text': response,
+        })
     return attributize({
-        'choices': [
-            {
-                'finish_reason': 'stop',
-                'index': 0,
-                'logprobs': None,
-                'text': response,
-            }
-        ],
+        'choices': choices,
     })
 
 def chat_delta(prompt):
