@@ -23,7 +23,7 @@ class Common:
     reload_conversations_channel = Queue()
 
 # Internal Cell
-import json, os, requests, uuid
+import json, os, requests, sys, uuid
 
 # Cell
 chat_gpt_base_url = 'http://127.0.0.1:8080'
@@ -102,7 +102,11 @@ def start_conversation(content):
             common.conversation_done_channel.put(True)
             continue
 
-        make_conversation_response = json.loads(line.decode('utf-8')[len('data: '):])
+        try:
+            make_conversation_response = json.loads(line.decode('utf-8')[len('data: '):])
+        except json.decoder.JSONDecodeError as err:
+            sys.stderr.write(f'Error JSON Decoding: {line}\n')
+            continue
         if make_conversation_response is None:
             continue
         parts = make_conversation_response['message']['content']['parts']
@@ -187,9 +191,9 @@ try:
     common.conversation_id = conversation_id
     get_conversation(conversation_id)
 except requests.exceptions.ConnectionError as errc:
-    print('Error Connecting:', errc)
+    sys.stderr.write(f'Error Connecting: {errc}\n')
 except RecursionError as errr:
-    print('Error Recursion:', errr)
+    sys.stderr.write(f'Error Recursion: {errr}\n')
 
 # Cell
 class attrdict(dict):
@@ -244,6 +248,11 @@ def mock_create(*args, **kwargs):
         })
     return attributize({
         'choices': choices,
+        'usage': {
+            'completion_tokens': 0,
+            'prompt_tokens': 0,
+            'total_tokens': 0,
+        },
     })
 
 def chat_delta(prompt):
