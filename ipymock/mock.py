@@ -62,9 +62,40 @@ def handle_conversation_detail(current_node, mapping):
             common.message_channel.put(message)
 
 def start_conversation(content):
-    if common.parent_message_id == '' or common.conversation_id == '':
+    if common.conversation_id != '' and common.parent_message_id == '':
+        try:
+            # set common.parent_message_id
+            get_conversation(common.conversation_id)
+        except requests.exceptions.ConnectionError as errc:
+            sys.stderr.write(f'Error Connecting: {errc}\n')
+        except RecursionError as errr:
+            sys.stderr.write(f'Error Recursion: {errr}\n')
+
+    if common.conversation_id == '' or common.parent_message_id == '':
         common.conversation_id = ''
         common.parent_message_id = str(uuid.uuid4())
+
+    post_data = {
+        'action': 'next',
+        'messages': [{
+            'id': str(uuid.uuid4()),
+            'author': {
+                'role': common.role_user,
+            },
+            'role': common.role_user,
+            'content': {
+                'content_type': 'text',
+                'parts': [content],
+            },
+        }],
+        'model': common.chat_gpt_model,
+        'continue_text': '',
+    }
+    if common.conversation_id != '':
+        post_data['conversation_id'] = common.conversation_id
+    if common.parent_message_id != '':
+        post_data['parent_message_id'] = common.parent_message_id
+
     response = requests.post(
         f'{chat_gpt_base_url}/conversation',
         headers = {
@@ -72,24 +103,7 @@ def start_conversation(content):
             'Content-Type': 'application/json',
             'Accept': 'text/event-stream'
         },
-        data = json.dumps({
-            'action': 'next',
-            'messages': [{
-                'id': uuid.uuid4().hex,
-                'author': {
-                    'role': common.role_user
-                },
-                'role': common.role_user,
-                'content': {
-                    'content_type': 'text',
-                    'parts': [content]
-                }
-            }],
-            'parent_message_id': common.parent_message_id,
-            'model': common.chat_gpt_model,
-            'conversation_id': common.conversation_id,
-            'continue_text': ''
-        }),
+        data = json.dumps(post_data),
         stream=True
     )
 
@@ -184,16 +198,7 @@ def clear_conversations():
 # Internal Cell
 # open the JSON file and read the conversation_id
 with open(os.path.expanduser('~/.config/revChatGPT/config.json'), 'r') as f:
-    conversation_id = json.load(f).get('conversation_id', None)
-
-# Internal Cell
-try:
-    common.conversation_id = conversation_id
-    get_conversation(conversation_id)
-except requests.exceptions.ConnectionError as errc:
-    sys.stderr.write(f'Error Connecting: {errc}\n')
-except RecursionError as errr:
-    sys.stderr.write(f'Error Recursion: {errr}\n')
+    common.conversation_id = json.load(f).get('conversation_id', None)
 
 # Cell
 class attrdict(dict):
