@@ -14,7 +14,19 @@ entries:
       url: core.html
     - output: web,pdf
       title: Mock OpenAI API
-      url: mock.html
+      url: browser.html
+    - output: web,pdf
+      title: Title
+      url: llm.html
+    - output: web,pdf
+      title: Chinese BabyAGI
+      url: agi.html
+    - output: web,pdf
+      title: Document Readers
+      url: tools_document.html
+    - output: web,pdf
+      title: DuckDuckGo Search API
+      url: tools_duckduckgo.html
     output: web
     title: ipymock
   output: web

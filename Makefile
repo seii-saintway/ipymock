@@ -15,7 +15,7 @@ docs_serve: docs
 	cd docs && bundle exec jekyll serve
 
 docs: $(SRC)
-	nbdev_build_docs
+	nbdev_build_docs --force_all True
 	touch docs
 
 test:
