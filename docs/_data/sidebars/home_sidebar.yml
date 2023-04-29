@@ -10,13 +10,13 @@ entries:
       title: Overview
       url: /
     - output: web,pdf
-      title: iPytest
+      title: iPyTest
       url: core.html
     - output: web,pdf
       title: Mock OpenAI API
       url: browser.html
     - output: web,pdf
-      title: Title
+      title: LLM
       url: llm.html
     - output: web,pdf
       title: Chinese BabyAGI

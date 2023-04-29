@@ -1,9 +1,9 @@
 {
   "ipymock": {
     "Overview": "/",
-    "iPytest": "core.html",
+    "iPyTest": "core.html",
     "Mock OpenAI API": "browser.html",
-    "Title": "llm.html",
+    "LLM": "llm.html",
     "Chinese BabyAGI": "agi.html",
     "Document Readers": "tools_document.html",
     "DuckDuckGo Search API": "tools_duckduckgo.html"
