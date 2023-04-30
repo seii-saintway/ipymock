@@ -11,7 +11,8 @@ class Common:
     chat_gpt_base_url = 'http://127.0.0.1:8080'
     access_token = None
 
-    chat_gpt_model = 'gpt-3.5-turbo'
+    chat_gpt_model = 'text-davinci-002-render-sha'
+    role_system = 'system'
     role_user = 'user'
     role_assistant = 'assistant'
 
@@ -34,7 +35,7 @@ common = Common()
 with open(os.path.expanduser('~/.config/ipymock/config.json'), 'r') as f:
     config = json.load(f)
     common.access_token = config.get('access_token', None)
-    common.conversation_id = config.get('conversation_id', None)
+    common.conversation_id = config.get('conversation_id', common.conversation_id)
 
 # Cell
 def get_conversations():
@@ -43,6 +44,11 @@ def get_conversations():
 
 def get_conversation(conversation_id):
     response = requests.get(f'{common.chat_gpt_base_url}/conversation/{conversation_id}', headers = {'Authorization': common.access_token})
+
+    if response.status_code >= 400:
+        sys.stderr.write(f'Error Status Code: {response.status_code}\n{response.text}\n')
+    response.raise_for_status()
+
     conversation = response.json()
     current_node = conversation['current_node']
     try:
@@ -57,7 +63,7 @@ def handle_conversation_detail(current_node, mapping):
     parent_id = conversation_detail.get('parent', '')
     if parent_id != '':
         handle_conversation_detail(parent_id, mapping)
-        common.question_answer_map[parent_id] = conversation_detail['message']['content']['parts'][0].strip()
+        common.question_answer_map[parent_id] = ''.join(conversation_detail['message']['content']['parts']).strip()
     if 'message' not in conversation_detail:
         return
     message = conversation_detail['message']
@@ -65,7 +71,7 @@ def handle_conversation_detail(current_node, mapping):
     if len(parts) > 0 and parts[0] != '' and message['author']['role'] == common.role_user:
         common.message_channel.put(message)
 
-def start_conversation(content):
+def start_conversation(prompt):
     if common.conversation_id != '' and common.parent_message_id == '':
         try:
             common.parent_message_id = get_conversation(common.conversation_id)
@@ -76,21 +82,40 @@ def start_conversation(content):
         common.conversation_id = ''
         common.parent_message_id = str(uuid.uuid4())
 
+    if isinstance(prompt, list):
+        raw_prompt = prompt
+        prompt = []
+        parts = []
+        for item in raw_prompt:
+            if isinstance(item, dict) and 'parts' in item:
+                if common.conversation_id == '' and 'role' in item and item['role'] == common.role_system:
+                    sys.stderr.write(f'Error Messaging: role system is not allowed in the first prompt. It is changed to role user.\n')
+                    item['role'] = common.role_user
+                prompt.append(item)
+            else:
+                parts.append(str(item))
+        prompt.append({'role': common.role_user, 'parts': parts})
+    elif isinstance(prompt, dict) and 'parts' in prompt:
+        prompt = [prompt]
+    else:
+        prompt = [{'role': common.role_user, 'parts': [str(prompt)]}]
+
     post_data = {
         'action': 'next',
+        'history_and_training_disabled': False,
         'messages': [{
             'id': str(uuid.uuid4()),
             'author': {
-                'role': common.role_user,
+                'role': msg.get('role', common.role_user),
             },
-            'role': common.role_user,
+            'role': msg.get('role', common.role_user),
             'content': {
                 'content_type': 'text',
-                'parts': [content],
+                'parts': msg['parts'],
             },
-        }],
+        } for msg in prompt],
         'model': common.chat_gpt_model,
-        'continue_text': '',
+        'timezone_offset_min': -540,
     }
     if common.conversation_id != '':
         post_data['conversation_id'] = common.conversation_id
@@ -100,12 +125,12 @@ def start_conversation(content):
     response = requests.post(
         f'{common.chat_gpt_base_url}/conversation',
         headers = {
-            'Authorization': common.access_token,
             'Content-Type': 'application/json',
-            'Accept': 'text/event-stream'
+            'Accept': 'text/event-stream',
+            'Authorization': f'Bearer {common.access_token}',
         },
         data = json.dumps(post_data),
-        stream=True
+        stream=True,
     )
 
     temp_conversation_id = ''
@@ -125,13 +150,13 @@ def start_conversation(content):
         if make_conversation_response is None:
             continue
         try:
-            parts = make_conversation_response['message']['content']['parts']
+            parts = ''.join(make_conversation_response['message']['content']['parts']).strip()
         except TypeError as err:
             sys.stderr.write(f'TypeError: {err}\nline = {line}\n')
             continue
-        if len(parts) > 0:
-            common.response_text_channel.put(parts[0])
-            yield parts[0]
+        if parts != '':
+            common.response_text_channel.put(parts)
+            yield parts
         if common.conversation_id == '':
             temp_conversation_id = make_conversation_response['conversation_id']
         common.parent_message_id = make_conversation_response['message']['id']
@@ -227,19 +252,49 @@ def delta(prompt):
     id = ''.join(
         random.choices(string.ascii_letters + string.digits, k = 29)
     )
-    res = ''
-    for response in start_conversation(prompt):
-        yield attributize({
-            'choices': [
-                {
-                    'index': 0,
-                    'logprobs': None,
-                    'text': response[len(res):],
-                }
-            ],
-            'id': f'cmpl-{id}',
-        })
-        res = response
+    wait_second = 1
+    while True:
+        res = ''
+        response = ''
+        try:
+            for response in start_conversation(prompt):
+                yield attributize({
+                    'choices': [
+                        {
+                            'index': 0,
+                            'logprobs': None,
+                            'text': response[len(res):],
+                        }
+                    ],
+                    'id': f'cmpl-{id}',
+                })
+                res = response
+        except requests.exceptions.HTTPError as err:
+            sys.stderr.write(
+                f'{err}\n'
+                f'response = {repr(response)}\n'
+                f'Retrying...\n'
+            )
+            status_code = err.response.status_code
+            if status_code == 413:
+                # caller should split the prompt
+                break
+            # if status_code == 429:
+            #     break
+            if status_code >= 400 and status_code != 500:
+                time.sleep(wait_second)
+                wait_second *= 2
+                continue
+            break
+        if response == '':
+            sys.stderr.write(
+                f'Error Responding: response = {repr(response)}\n'
+                f'Retrying...\n'
+            )
+            time.sleep(wait_second)
+            wait_second *= 2
+            continue
+        break
 
 def mock_create(*args, **kwargs):
     prompts = []
@@ -268,7 +323,7 @@ def mock_create(*args, **kwargs):
                 )
                 status_code = err.response.status_code
                 if status_code == 413:
-                    # todo: split the prompt
+                    # caller should split the prompt
                     break
                 # if status_code == 429:
                 #     break
@@ -309,20 +364,50 @@ def chat_delta(prompt):
     id = ''.join(
         random.choices(string.ascii_letters + string.digits, k = 29)
     )
-    res = ''
-    for response in start_conversation(prompt):
-        yield attributize({
-            'choices': [
-                {
-                    'index': 0,
-                    'delta': {
-                        'content': response[len(res):],
-                    }
-                }
-            ],
-            'id': f'chatcmpl-{id}',
-        })
-        res = response
+    wait_second = 1
+    while True:
+        res = ''
+        response = ''
+        try:
+            for response in start_conversation(prompt):
+                yield attributize({
+                    'choices': [
+                        {
+                            'index': 0,
+                            'delta': {
+                                'content': response[len(res):],
+                            }
+                        }
+                    ],
+                    'id': f'chatcmpl-{id}',
+                })
+                res = response
+        except requests.exceptions.HTTPError as err:
+            sys.stderr.write(
+                f'{err}\n'
+                f'response = {repr(response)}\n'
+                f'Retrying...\n'
+            )
+            status_code = err.response.status_code
+            if status_code == 413:
+                # caller should split the prompt
+                break
+            # if status_code == 429:
+            #     break
+            if status_code >= 400 and status_code != 500:
+                time.sleep(wait_second)
+                wait_second *= 2
+                continue
+            break
+        if response == '':
+            sys.stderr.write(
+                f'Error Responding: response = {repr(response)}\n'
+                f'Retrying...\n'
+            )
+            time.sleep(wait_second)
+            wait_second *= 2
+            continue
+        break
 
 def mock_chat_create(*args, **kwargs):
     summarized_prompt = ''
@@ -347,7 +432,7 @@ def mock_chat_create(*args, **kwargs):
             )
             status_code = err.response.status_code
             if status_code == 413:
-                # todo: split the prompt
+                # caller should split the prompt
                 break
             # if status_code == 429:
             #     break
