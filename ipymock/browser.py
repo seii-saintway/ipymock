@@ -2,7 +2,9 @@
 
 __all__ = ['common', 'get_conversations', 'get_conversation', 'handle_conversation_detail', 'start_conversation',
            'generate_title', 'rename_title', 'delete_conversation', 'recover_conversation', 'clear_conversations',
-           'attrdict', 'attributize', 'delta', 'mock_create', 'chat_delta', 'mock_chat_create', 'mock_openai']
+           'init', 'login', 'open_chat', 'remove_portal', 'request', 'get_last_response', 'get_response', 'ask',
+           'get_screenshot', 'attrdict', 'attributize', 'retry_on_status_code', 'content', 'new_id', 'delta',
+           'chat_delta', 'mock_create', 'mock_chat_create', 'mock_openai']
 
 # Internal Cell
 from queue import Queue
@@ -25,6 +27,9 @@ class Common:
     conversation_id = ''
     reload_conversations_channel = Queue()
 
+    config = {}
+    driver = None
+
 # Internal Cell
 import json, os, requests, sys, time, uuid
 
@@ -33,17 +38,18 @@ common = Common()
 
 # open the JSON file and read the access_token and conversation_id
 with open(os.path.expanduser('~/.config/ipymock/config.json'), 'r') as f:
-    config = json.load(f)
-    common.access_token = config.get('access_token', None)
-    common.conversation_id = config.get('conversation_id', common.conversation_id)
+    common.config = json.load(f)
+    common.chat_gpt_base_url = common.config.get('chat_gpt_base_url', common.chat_gpt_base_url)
+    common.access_token = common.config.get('access_token', common.access_token)
+    common.conversation_id = common.config.get('conversation_id', common.conversation_id)
 
 # Cell
 def get_conversations():
-    response = requests.get(f'{common.chat_gpt_base_url}/conversations?offset=0&limit=100', headers = {'Authorization': common.access_token})
+    response = requests.get(f'{common.chat_gpt_base_url}/conversations?offset=0&limit=100', headers = {'Authorization': f'Bearer {common.access_token}'})
     return response.json()
 
 def get_conversation(conversation_id):
-    response = requests.get(f'{common.chat_gpt_base_url}/conversation/{conversation_id}', headers = {'Authorization': common.access_token})
+    response = requests.get(f'{common.chat_gpt_base_url}/conversation/{conversation_id}', headers = {'Authorization': f'Bearer {common.access_token}'})
 
     if response.status_code >= 400:
         sys.stderr.write(f'Error Status Code: {response.status_code}\n{response.text}\n')
@@ -178,7 +184,7 @@ def generate_title(conversation_id):
     requests.post(
         f'{common.chat_gpt_base_url}/conversation/gen_title/{conversation_id}',
         headers = {
-            'Authorization': common.access_token,
+            'Authorization': f'Bearer {common.access_token}',
             'Content-Type': 'application/json'
         },
         data = json.dumps({
@@ -191,7 +197,7 @@ def rename_title(conversation_id, title):
     requests.patch(
         f'{common.chat_gpt_base_url}/conversation/{conversation_id}',
         headers={
-            'Authorization': common.access_token,
+            'Authorization': f'Bearer {common.access_token}',
             'Content-Type': 'application/json'
         },
         data = json.dumps({
@@ -203,7 +209,7 @@ def delete_conversation(conversation_id):
     requests.patch(
         f'{common.chat_gpt_base_url}/conversation/{conversation_id}',
         headers={
-            'Authorization': common.access_token,
+            'Authorization': f'Bearer {common.access_token}',
             'Content-Type': 'application/json'
         },
         data=json.dumps({
@@ -215,7 +221,7 @@ def recover_conversation(conversation_id):
     requests.patch(
         f'{common.chat_gpt_base_url}/conversation/{conversation_id}',
         headers={
-            'Authorization': common.access_token,
+            'Authorization': f'Bearer {common.access_token}',
             'Content-Type': 'application/json'
         },
         data=json.dumps({
@@ -224,11 +230,243 @@ def recover_conversation(conversation_id):
     )
 
 def clear_conversations():
-    requests.patch(f'{common.chat_gpt_base_url}/conversations', headers = {'Authorization': common.access_token}, data = {'is_visible': False})
+    requests.patch(f'{common.chat_gpt_base_url}/conversations', headers = {'Authorization': f'Bearer {common.access_token}'}, data = {'is_visible': False})
 
     common.conversation_id = ''
     common.parent_message_id = ''
     common.reload_conversations_channel.put(True)
+
+# Internal Cell
+from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support import expected_conditions
+from selenium.webdriver.support.ui import WebDriverWait
+
+import undetected_chromedriver as uc
+
+# Internal Cell
+from markdownify import MarkdownConverter
+
+class ChatGPTConverter(MarkdownConverter):
+    def convert_a(self, node, text, convert_as_inline):
+        if node.get('href') == text:
+            return node.get('href')
+        return f"[{text}]({node.get('href')})"
+
+    def convert_pre(self, node, text, convert_as_inline):
+        node_code = node.find('code')
+        return (
+            f"```{' '.join([c[len('language-'):] for c in node_code.get('class') if c.startswith('language-')])}\n"
+            f'{node_code.text.strip()}\n'
+            '```\n'
+        )
+
+markdownize = ChatGPTConverter().convert
+
+# Cell
+def init(chrome_args = None):
+    options = uc.ChromeOptions()
+    if isinstance(chrome_args, list):
+        for arg in chrome_args:
+            options.add_argument(arg)
+    common.driver = uc.Chrome(options = options)
+
+    login()
+    open_chat(common.conversation_id)
+
+    global start_conversation
+    start_conversation = ask
+
+def login():
+    common.driver.get('https://chat.openai.com/auth/login')
+
+    WebDriverWait(common.driver, 5).until(
+        expected_conditions.presence_of_element_located((By.XPATH, '//*[text()="Log in"]'))
+    )
+
+    common.driver.execute_script('''
+    document.evaluate(
+      '//*[text()="Log in"]',
+      document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null
+    ).snapshotItem(0).dispatchEvent(
+      new MouseEvent('click', {
+        view: window,
+        bubbles: true,
+        cancelable: true
+      })
+    );
+    ''')
+
+    WebDriverWait(common.driver, 5).until(
+        expected_conditions.presence_of_element_located((By.XPATH, '//button[@data-provider="google"]'))
+    )
+
+    common.driver.execute_script('''
+    document.evaluate(
+      '//button[@data-provider="google"]',
+      document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null
+    ).snapshotItem(0).dispatchEvent(
+      new MouseEvent('click', {
+        view: window,
+        bubbles: true,
+        cancelable: true
+      })
+    );
+    ''')
+
+    WebDriverWait(common.driver, 5).until(
+        expected_conditions.presence_of_element_located((By.XPATH, '//input[@type="email"]'))
+    )
+
+    common.driver.execute_script(f'''
+    const google_email_input = document.evaluate('//input[@type="email"]', document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null).snapshotItem(0);
+    google_email_input.value = '{common.config['email']}';
+    google_email_input.dispatchEvent(
+      new Event('input', {{
+        view: window,
+        bubbles: true,
+        cancelable: true
+      }})
+    );
+    ''')
+
+    WebDriverWait(common.driver, 5).until(
+        expected_conditions.presence_of_element_located((By.XPATH, '//*[@id="identifierNext"]'))
+    )
+
+    common.driver.execute_script('''
+    document.evaluate(
+      '//*[@id="identifierNext"]',
+      document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null
+    ).snapshotItem(0).dispatchEvent(
+      new MouseEvent('click', {
+        view: window,
+        bubbles: true,
+        cancelable: true
+      })
+    );
+    ''')
+
+    WebDriverWait(common.driver, 10).until(
+        expected_conditions.element_to_be_clickable((By.XPATH, '//input[@type="password"]'))
+    ).click()
+
+    ActionChains(common.driver).send_keys(common.config['password']).send_keys(Keys.ENTER).perform()
+
+    remove_portal()
+
+def open_chat(conversation_id = ''):
+    if conversation_id == '':
+        common.driver.get('https://chat.openai.com')
+    else:
+        common.driver.get(f'https://chat.openai.com/c/{conversation_id}')
+        if common.conversation_id != conversation_id:
+            common.conversation_id = conversation_id
+            common.parent_message_id = ''
+
+    WebDriverWait(common.driver, 30).until(
+        lambda driver: driver.execute_script('return document.readyState') == 'complete'
+    )
+
+    remove_portal()
+
+def remove_portal():
+    while True:
+        try:
+            WebDriverWait(common.driver, 5).until(
+                expected_conditions.element_to_be_clickable((By.XPATH, '//div[text()="Next"]'))
+            ).click()
+        except TimeoutException:
+            break
+    try:
+        WebDriverWait(common.driver, 5).until(
+            expected_conditions.element_to_be_clickable((By.XPATH, '//div[text()="Done"]'))
+        ).click()
+    except TimeoutException:
+        pass
+
+# Internal Cell
+chatgpt_textbox = (By.TAG_NAME, 'textarea')
+chatgpt_disabled_button = (By.XPATH, '//textarea/following-sibling::button[@disabled]')
+chatgpt_streaming = (By.CLASS_NAME, 'result-streaming')
+chatgpt_response = (By.XPATH, '//div[starts-with(@class, "flex flex-grow flex-col gap-3")]')
+chatgpt_red_500 = (By.XPATH, '//div[contains(@class, "border-red-500 bg-red-500/10")]')
+chatgpt_big_response = (By.XPATH, '//div[@class="flex-1 overflow-hidden"]//div[p]')
+chatgpt_small_response = (By.XPATH, '//div[starts-with(@class, "markdown prose w-full break-words")]')
+
+# Cell
+def request(prompt: str) -> None:
+    try:
+        textbox = WebDriverWait(common.driver, 5).until(
+            expected_conditions.element_to_be_clickable(chatgpt_textbox)
+        )
+    except TimeoutException:
+        open_chat(common.conversation_id)
+        textbox = WebDriverWait(common.driver, 5).until(
+            expected_conditions.element_to_be_clickable(chatgpt_textbox)
+        )
+    textbox.click()
+    common.driver.execute_script('''
+    var element = arguments[0], txt = arguments[1];
+    element.value += txt;
+    element.dispatchEvent(new Event("change"));
+    ''',
+        textbox,
+        prompt,
+    )
+    # textbox.send_keys(prompt)
+    # WebDriverWait(common.driver, 3).until_not(
+    #     expected_conditions.presence_of_element_located(chatgpt_disabled_button)
+    # )
+    textbox.send_keys(Keys.ENTER)
+
+def get_last_response():
+    responses = common.driver.find_elements(*chatgpt_big_response)
+    if responses != []:
+        return responses[-1]
+    responses = common.driver.find_elements(*chatgpt_small_response)
+    if responses != []:
+        return responses[-1]
+
+def get_response() -> str:
+    try:
+        result_streaming = WebDriverWait(common.driver, 30).until(
+            expected_conditions.presence_of_element_located(chatgpt_streaming)
+        )
+    except TimeoutException:
+        response = common.driver.find_elements(*chatgpt_response)[-1]
+        is_error = common.driver.find_elements(*chatgpt_red_500) != []
+        sys.stderr.write(
+            'TimeoutException: having waited 30 seconds for result-streaming\n'
+            f'response.text = {response.text}\n'
+            f'is_error = {is_error}\n'
+        )
+        if not is_error:
+            yield markdownize(response.get_attribute('innerHTML'))
+        return
+    while result_streaming:
+        response = get_last_response()
+        try:
+            if 'text-red' in response.get_attribute('class'):
+                sys.stderr.write(f'Error Responding: response.text = {response.text}\n')
+            yield markdownize(response.get_attribute('innerHTML'))
+        except StaleElementReferenceException:
+            pass
+        result_streaming = common.driver.find_elements(*chatgpt_streaming)
+    response = get_last_response()
+    yield markdownize(response.get_attribute('innerHTML'))
+
+def ask(prompt: str) -> str:
+    request(prompt)
+    return get_response()
+
+# Cell
+import io, PIL.Image
+
+def get_screenshot() -> 'PIL.PngImagePlugin.PngImageFile':
+    return PIL.Image.open(io.BytesIO(common.driver.get_screenshot_as_png()))
 
 # Internal Cell
 import random, string
@@ -248,53 +486,85 @@ def attributize(obj):
         return [attributize(item) for item in obj]
     return obj
 
-def delta(prompt):
-    id = ''.join(
+def retry_on_status_code(func):
+    '''Retry decorator that retries a function on specific status codes.'''
+    def wrapper(*args, **kwargs):
+        wait_second = 1
+        while True:
+            try:
+                return func(*args, **kwargs)
+            except requests.exceptions.HTTPError as err:
+                sys.stderr.write(
+                    f'{err}\n'
+                    f'text = {repr(err.response.text)}\n'
+                )
+                status_code = err.response.status_code
+                if status_code in (401, 403, 413, 500):
+                    # status code 413: the caller should split the prompt first
+                    break
+                if status_code >= 400:
+                    sys.stderr.write(
+                        f'Retrying...\n'
+                    )
+                    time.sleep(wait_second)
+                    wait_second *= 2
+                    continue
+                break
+    return wrapper
+
+@retry_on_status_code
+def content(prompt):
+    for response in start_conversation(prompt):
+        pass
+    if locals().get('response') == '':
+        sys.stderr.write(
+            f'Error Responding: response = {repr(response)}\n'
+        )
+    return locals().get('response', '')
+
+def new_id():
+    return ''.join(
         random.choices(string.ascii_letters + string.digits, k = 29)
     )
-    wait_second = 1
-    while True:
-        res = ''
-        response = ''
-        try:
-            for response in start_conversation(prompt):
-                yield attributize({
-                    'choices': [
-                        {
-                            'index': 0,
-                            'logprobs': None,
-                            'text': response[len(res):],
-                        }
-                    ],
-                    'id': f'cmpl-{id}',
-                })
-                res = response
-        except requests.exceptions.HTTPError as err:
-            sys.stderr.write(
-                f'{err}\n'
-                f'response = {repr(response)}\n'
-                f'Retrying...\n'
-            )
-            status_code = err.response.status_code
-            if status_code == 413:
-                # caller should split the prompt
-                break
-            # if status_code == 429:
-            #     break
-            if status_code >= 400 and status_code != 500:
-                time.sleep(wait_second)
-                wait_second *= 2
-                continue
-            break
-        if response == '':
-            sys.stderr.write(
-                f'Error Responding: response = {repr(response)}\n'
-                f'Retrying...\n'
-            )
-            time.sleep(wait_second)
-            wait_second *= 2
-            continue
-        break
+
+def delta(prompt):
+    res = ''
+    for response in start_conversation(prompt):
+        yield attributize({
+            'choices': [
+                {
+                    'index': 0,
+                    'logprobs': None,
+                    'text': response[len(res):],
+                }
+            ],
+            'id': f'cmpl-{new_id()}',
+        })
+        res = response
+    if locals().get('response') == '':
+        sys.stderr.write(
+            f'Error Responding: response = {repr(response)}\n'
+        )
+
+def chat_delta(prompt):
+    res = ''
+    for response in start_conversation(prompt):
+        yield attributize({
+            'choices': [
+                {
+                    'index': 0,
+                    'delta': {
+                        'content': response[len(res):],
+                    }
+                }
+            ],
+            'id': f'chatcmpl-{new_id()}',
+        })
+        res = response
+    if locals().get('response') == '':
+        sys.stderr.write(
+            f'Error Responding: response = {repr(response)}\n'
+        )
 
 def mock_create(*args, **kwargs):
     prompts = []
@@ -309,105 +579,21 @@ def mock_create(*args, **kwargs):
 
     choices = []
     for prompt in prompts:
-        response = ''
-        wait_second = 1
-        while True:
-            try:
-                for response in start_conversation(prompt):
-                    pass
-            except requests.exceptions.HTTPError as err:
-                sys.stderr.write(
-                    f'{err}\n'
-                    f'response = {repr(response)}\n'
-                    f'Retrying...\n'
-                )
-                status_code = err.response.status_code
-                if status_code == 413:
-                    # caller should split the prompt
-                    break
-                # if status_code == 429:
-                #     break
-                if status_code >= 400 and status_code != 500:
-                    time.sleep(wait_second)
-                    wait_second *= 2
-                    continue
-                break
-            if response == '':
-                sys.stderr.write(
-                    f'Error Responding: response = {repr(response)}\n'
-                    f'Retrying...\n'
-                )
-                time.sleep(wait_second)
-                wait_second *= 2
-                continue
-            break
         choices.append({
             'finish_reason': 'stop',
             'index': 0,
             'logprobs': None,
-            'text': response,
+            'text': content(prompt),
         })
-    id = ''.join(
-        random.choices(string.ascii_letters + string.digits, k = 29)
-    )
     return attributize({
         'choices': choices,
-        'id': f'cmpl-{id}',
+        'id': f'cmpl-{new_id()}',
         'usage': {
             'completion_tokens': 0,
             'prompt_tokens': 0,
             'total_tokens': 0,
         },
     })
-
-def chat_delta(prompt):
-    id = ''.join(
-        random.choices(string.ascii_letters + string.digits, k = 29)
-    )
-    wait_second = 1
-    while True:
-        res = ''
-        response = ''
-        try:
-            for response in start_conversation(prompt):
-                yield attributize({
-                    'choices': [
-                        {
-                            'index': 0,
-                            'delta': {
-                                'content': response[len(res):],
-                            }
-                        }
-                    ],
-                    'id': f'chatcmpl-{id}',
-                })
-                res = response
-        except requests.exceptions.HTTPError as err:
-            sys.stderr.write(
-                f'{err}\n'
-                f'response = {repr(response)}\n'
-                f'Retrying...\n'
-            )
-            status_code = err.response.status_code
-            if status_code == 413:
-                # caller should split the prompt
-                break
-            # if status_code == 429:
-            #     break
-            if status_code >= 400 and status_code != 500:
-                time.sleep(wait_second)
-                wait_second *= 2
-                continue
-            break
-        if response == '':
-            sys.stderr.write(
-                f'Error Responding: response = {repr(response)}\n'
-                f'Retrying...\n'
-            )
-            time.sleep(wait_second)
-            wait_second *= 2
-            continue
-        break
 
 def mock_chat_create(*args, **kwargs):
     summarized_prompt = ''
@@ -418,53 +604,18 @@ def mock_chat_create(*args, **kwargs):
     if kwargs.get('stream', False):
         return chat_delta(summarized_prompt)
 
-    response = ''
-    wait_second = 1
-    while True:
-        try:
-            for response in start_conversation(summarized_prompt):
-                pass
-        except requests.exceptions.HTTPError as err:
-            sys.stderr.write(
-                f'{err}\n'
-                f'response = {repr(response)}\n'
-                f'Retrying...\n'
-            )
-            status_code = err.response.status_code
-            if status_code == 413:
-                # caller should split the prompt
-                break
-            # if status_code == 429:
-            #     break
-            if status_code >= 400 and status_code != 500:
-                time.sleep(wait_second)
-                wait_second *= 2
-                continue
-            break
-        if response == '':
-            sys.stderr.write(
-                f'Error Responding: response = {repr(response)}\n'
-                f'Retrying...\n'
-            )
-            time.sleep(wait_second)
-            wait_second *= 2
-            continue
-        break
-    id = ''.join(
-        random.choices(string.ascii_letters + string.digits, k = 29)
-    )
     return attributize({
         'choices': [
             {
                 'finish_reason': 'stop',
                 'index': 0,
                 'message': {
-                    'content': response,
+                    'content': content(summarized_prompt),
                     'role': 'assistant',
                 }
             }
         ],
-        'id': f'chatcmpl-{id}',
+        'id': f'chatcmpl-{new_id()}',
         'usage': {
             'completion_tokens': 0,
             'prompt_tokens': 0,

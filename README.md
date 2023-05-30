@@ -2,18 +2,37 @@
 
 > iPyMock uses GPT 3.5 turbo by browser automation and <a href='https://huggingface.co/GanymedeNil/text2vec-large-chinese'>a CoSENT based model</a> to embed English and Chinese.
 
-[![Discord Follow](https://dcbadge.vercel.app/api/server/ARTMvTQv?style=flat)](https://discord.gg/ARTMvTQv)
+[![Discord Follow](https://dcbadge.vercel.app/api/server/8YhXA7TYrC?style=flat)](https://discord.gg/8YhXA7TYrC)
 [![Twitter Follow](https://img.shields.io/twitter/follow/seii_saintway?style=social)](https://twitter.com/seii_saintway)
 
 ## Setup iPyMock
 
-Get your access_token at [openai api session](https://chat.openai.com/api/auth/session) and the conversation_id in the url of chat.openai.com/c/\<conversation_id\>
+`gmail_address` and `gmail_password` are needed for utilizing chrome automation locally.
+
+`conversation_id` could be found in the url of `chat.openai.com/c/<conversation_id>`.
 
 ```bash
 mkdir -p ~/.config/ipymock
 
 cat << EOF > ~/.config/ipymock/config.json
 {
+  "email": "<gmail_address>",
+  "password": "<gmail_password>",
+  "conversation_id": "<conversation_id>"
+}
+EOF
+
+pip install --upgrade ipymock
+```
+
+`access_token` at [openai api session](https://chat.openai.com/api/auth/session) is needed for utilizing a backend api proxy.
+
+```bash
+mkdir -p ~/.config/ipymock
+
+cat << EOF > ~/.config/ipymock/config.json
+{
+  "chat_gpt_base_url": "<chat_gpt_base_url>",
   "access_token": "<access_token>",
   "conversation_id": "<conversation_id>"
 }
@@ -22,7 +41,7 @@ EOF
 pip install --upgrade ipymock
 ```
 
-## Using the Browser Side API in Jupyter Notebooks
+## Using the OpenAI Backend API from Browser Side in Jupyter Notebooks
 
 ```python
 from ipymock.browser import start_conversation
@@ -34,9 +53,11 @@ def ask(prompt):
         IPython.display.clear_output(wait=True)
 
 import ipymock.browser
-# if the proxy is deployed locally
+# 1. you could initialize chrome automation locally
+ipymock.browser.init(['--headless'])
+# 2. or if a proxy is deployed locally
 ipymock.browser.common.chat_gpt_base_url = 'http://127.0.0.1:8080'
-# otherwise using a third party proxy
+# 3. otherwise using a third party proxy
 ipymock.browser.common.chat_gpt_base_url = 'https://.../api'
 # the conversation_id which is set in config.json
 print(ipymock.browser.common.conversation_id)
@@ -88,9 +109,9 @@ import ipymock.browser
 import ipymock.llm
 import pytest
 
-ipymock.browser.common.chat_gpt_base_url = 'http://127.0.0.1:8080'
 # reset conversation_id to empty to start a new chat
 ipymock.browser.common.conversation_id = ''
+ipymock.browser.init()
 
 @pytest.fixture
 def reset_embed_dimension(monkeypatch):

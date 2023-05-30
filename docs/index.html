@@ -31,7 +31,7 @@ nb_path: "nbs/0_index.ipynb"
 
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p><a href="https://discord.gg/ARTMvTQv"><img src="https://dcbadge.vercel.app/api/server/ARTMvTQv?style=flat" alt="Discord Follow"></a>
+<p><a href="https://discord.gg/8YhXA7TYrC"><img src="https://dcbadge.vercel.app/api/server/8YhXA7TYrC?style=flat" alt="Discord Follow"></a>
 <a href="https://twitter.com/seii_saintway"><img src="https://img.shields.io/twitter/follow/seii_saintway?style=social" alt="Twitter Follow"></a></p>
 
 </div>
@@ -39,11 +39,26 @@ nb_path: "nbs/0_index.ipynb"
 </div>
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Setup-iPyMock">Setup iPyMock<a class="anchor-link" href="#Setup-iPyMock"> </a></h2><p>Get your access_token at <a href="https://chat.openai.com/api/auth/session">openai api session</a> and the conversation_id in the url of chat.openai.com/c/\&lt;conversation_id&gt;</p>
+<h2 id="Setup-iPyMock">Setup iPyMock<a class="anchor-link" href="#Setup-iPyMock"> </a></h2><p><code>gmail_address</code> and <code>gmail_password</code> are needed for utilizing chrome automation locally.</p>
+<p><code>conversation_id</code> could be found in the url of <code>chat.openai.com/c/&lt;conversation_id&gt;</code>.</p>
 <div class="highlight"><pre><span></span>mkdir -p ~/.config/ipymock
 
 cat <span class="s">&lt;&lt; EOF &gt; ~/.config/ipymock/config.json</span>
 <span class="s">{</span>
+<span class="s">  &quot;email&quot;: &quot;&lt;gmail_address&gt;&quot;,</span>
+<span class="s">  &quot;password&quot;: &quot;&lt;gmail_password&gt;&quot;,</span>
+<span class="s">  &quot;conversation_id&quot;: &quot;&lt;conversation_id&gt;&quot;</span>
+<span class="s">}</span>
+<span class="s">EOF</span>
+
+pip install --upgrade ipymock
+</pre></div>
+<p><code>access_token</code> at <a href="https://chat.openai.com/api/auth/session">openai api session</a> is needed for utilizing a backend api proxy.</p>
+<div class="highlight"><pre><span></span>mkdir -p ~/.config/ipymock
+
+cat <span class="s">&lt;&lt; EOF &gt; ~/.config/ipymock/config.json</span>
+<span class="s">{</span>
+<span class="s">  &quot;chat_gpt_base_url&quot;: &quot;&lt;chat_gpt_base_url&gt;&quot;,</span>
 <span class="s">  &quot;access_token&quot;: &quot;&lt;access_token&gt;&quot;,</span>
 <span class="s">  &quot;conversation_id&quot;: &quot;&lt;conversation_id&gt;&quot;</span>
 <span class="s">}</span>
@@ -57,7 +72,7 @@ pip install --upgrade ipymock
 </div>
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Using-the-Browser-Side-API-in-Jupyter-Notebooks">Using the Browser Side API in Jupyter Notebooks<a class="anchor-link" href="#Using-the-Browser-Side-API-in-Jupyter-Notebooks"> </a></h2><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ipymock.browser</span> <span class="kn">import</span> <span class="n">start_conversation</span>
+<h2 id="Using-the-OpenAI-Backend-API-from-Browser-Side-in-Jupyter-Notebooks">Using the OpenAI Backend API from Browser Side in Jupyter Notebooks<a class="anchor-link" href="#Using-the-OpenAI-Backend-API-from-Browser-Side-in-Jupyter-Notebooks"> </a></h2><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ipymock.browser</span> <span class="kn">import</span> <span class="n">start_conversation</span>
 <span class="kn">import</span> <span class="nn">IPython</span>
 
 <span class="k">def</span> <span class="nf">ask</span><span class="p">(</span><span class="n">prompt</span><span class="p">):</span>
@@ -66,9 +81,11 @@ pip install --upgrade ipymock
         <span class="n">IPython</span><span class="o">.</span><span class="n">display</span><span class="o">.</span><span class="n">clear_output</span><span class="p">(</span><span class="n">wait</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 <span class="kn">import</span> <span class="nn">ipymock.browser</span>
-<span class="c1"># if the proxy is deployed locally</span>
+<span class="c1"># 1. you could initialize chrome automation locally</span>
+<span class="n">ipymock</span><span class="o">.</span><span class="n">browser</span><span class="o">.</span><span class="n">init</span><span class="p">([</span><span class="s1">&#39;--headless&#39;</span><span class="p">])</span>
+<span class="c1"># 2. or if a proxy is deployed locally</span>
 <span class="n">ipymock</span><span class="o">.</span><span class="n">browser</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">chat_gpt_base_url</span> <span class="o">=</span> <span class="s1">&#39;http://127.0.0.1:8080&#39;</span>
-<span class="c1"># otherwise using a third party proxy</span>
+<span class="c1"># 3. otherwise using a third party proxy</span>
 <span class="n">ipymock</span><span class="o">.</span><span class="n">browser</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">chat_gpt_base_url</span> <span class="o">=</span> <span class="s1">&#39;https://.../api&#39;</span>
 <span class="c1"># the conversation_id which is set in config.json</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">ipymock</span><span class="o">.</span><span class="n">browser</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">conversation_id</span><span class="p">)</span>
@@ -118,9 +135,9 @@ pip install --upgrade ipymock
 <span class="kn">import</span> <span class="nn">ipymock.llm</span>
 <span class="kn">import</span> <span class="nn">pytest</span>
 
-<span class="n">ipymock</span><span class="o">.</span><span class="n">browser</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">chat_gpt_base_url</span> <span class="o">=</span> <span class="s1">&#39;http://127.0.0.1:8080&#39;</span>
 <span class="c1"># reset conversation_id to empty to start a new chat</span>
 <span class="n">ipymock</span><span class="o">.</span><span class="n">browser</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">conversation_id</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+<span class="n">ipymock</span><span class="o">.</span><span class="n">browser</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
 
 <span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span>
 <span class="k">def</span> <span class="nf">reset_embed_dimension</span><span class="p">(</span><span class="n">monkeypatch</span><span class="p">):</span>
