@@ -388,8 +388,9 @@ def remove_portal():
         pass
 
 # Internal Cell
-chatgpt_textbox = (By.TAG_NAME, 'textarea')
+chatgpt_textbox = (By.XPATH, '//textarea[@id="prompt-textarea"]')
 chatgpt_disabled_button = (By.XPATH, '//textarea/following-sibling::button[@disabled]')
+chatgpt_enabled_button = (By.XPATH, '//textarea/following-sibling::button[not(@disabled)]')
 chatgpt_streaming = (By.CLASS_NAME, 'result-streaming')
 chatgpt_response = (By.XPATH, '//div[starts-with(@class, "flex flex-grow flex-col gap-3")]')
 chatgpt_red_500 = (By.XPATH, '//div[contains(@class, "border-red-500 bg-red-500/10")]')
@@ -408,19 +409,26 @@ def request(prompt: str) -> None:
             expected_conditions.element_to_be_clickable(chatgpt_textbox)
         )
     textbox.click()
+    # textbox.send_keys(prompt.strip())
     common.driver.execute_script('''
     var element = arguments[0], txt = arguments[1];
     element.value += txt;
     element.dispatchEvent(new Event("change"));
     ''',
         textbox,
-        prompt,
+        prompt.strip(),
     )
-    # textbox.send_keys(prompt)
     # WebDriverWait(common.driver, 3).until_not(
     #     expected_conditions.presence_of_element_located(chatgpt_disabled_button)
     # )
+    textbox.send_keys('\n')
     textbox.send_keys(Keys.ENTER)
+    # try:
+    #     WebDriverWait(common.driver, 5).until(
+    #         expected_conditions.element_to_be_clickable(chatgpt_enabled_button)
+    #     ).click()
+    # except TimeoutException:
+    #     pass
 
 def get_last_response():
     responses = common.driver.find_elements(*chatgpt_big_response)
