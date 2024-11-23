@@ -13,6 +13,9 @@ entries:
       title: iPyTest
       url: core.html
     - output: web,pdf
+      title: Browser Automation
+      url: automation.html
+    - output: web,pdf
       title: Mock OpenAI API
       url: browser.html
     - output: web,pdf

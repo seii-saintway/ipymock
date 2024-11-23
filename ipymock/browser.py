@@ -244,8 +244,6 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.ui import WebDriverWait
 
-import undetected_chromedriver as uc
-
 # Internal Cell
 from markdownify import MarkdownConverter
 
@@ -259,19 +257,25 @@ class ChatGPTConverter(MarkdownConverter):
         node_code = node.find('code')
         return (
             f"```{' '.join([c[len('language-'):] for c in node_code.get('class') if c.startswith('language-')])}\n"
-            f'{node_code.text.strip()}\n'
+            f'{node_code.text.rstrip()}\n'
             '```\n'
         )
 
 markdownize = ChatGPTConverter().convert
 
+# Internal Cell
+from collections.abc import Iterable
+from .automation import init as init_browser
+
 # Cell
-def init(chrome_args = None):
-    options = uc.ChromeOptions()
-    if isinstance(chrome_args, list):
-        for arg in chrome_args:
-            options.add_argument(arg)
-    common.driver = uc.Chrome(options = options)
+def init(chrome_args = set()):
+    if isinstance(chrome_args, Iterable):
+        chrome_args = set(chrome_args)
+    chrome_args.add('--lang=en')
+    chrome_args.add('--force-dark-mode')
+    init_browser(*chrome_args)
+    from .automation import driver
+    common.driver = driver
 
     login()
     open_chat(common.conversation_id)
@@ -279,112 +283,148 @@ def init(chrome_args = None):
     global start_conversation
     start_conversation = ask
 
+# Internal Cell
+from .automation import new, wait, click, input, fill
+
+# Cell
 def login():
-    common.driver.get('https://chat.openai.com/auth/login')
+    new('https://chatgpt.com/auth/login')
 
-    WebDriverWait(common.driver, 5).until(
-        expected_conditions.presence_of_element_located((By.XPATH, '//*[text()="Log in"]'))
-    )
+    # WebDriverWait(common.driver, 5).until(
+    #     expected_conditions.presence_of_element_located((By.XPATH, '//*[text()="Log in"]'))
+    # )
+    wait(5.0)
 
-    common.driver.execute_script('''
-    document.evaluate(
-      '//*[text()="Log in"]',
-      document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null
-    ).snapshotItem(0).dispatchEvent(
-      new MouseEvent('click', {
-        view: window,
-        bubbles: true,
-        cancelable: true
-      })
-    );
-    ''')
+    # common.driver.execute_script('''
+    # document.evaluate(
+    #   '//*[text()="Log in"]',
+    #   document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null
+    # ).snapshotItem(0).dispatchEvent(
+    #   new MouseEvent('click', {
+    #     view: window,
+    #     bubbles: true,
+    #     cancelable: true
+    #   })
+    # );
+    # ''')
+    click('Log in')
 
-    WebDriverWait(common.driver, 5).until(
-        expected_conditions.presence_of_element_located((By.XPATH, '//button[@data-provider="google"]'))
-    )
+    # WebDriverWait(common.driver, 5).until(
+    #     expected_conditions.presence_of_element_located((By.XPATH, '//button[@data-provider="google"]'))
+    # )
+    wait(5.0)
 
-    common.driver.execute_script('''
-    document.evaluate(
-      '//button[@data-provider="google"]',
-      document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null
-    ).snapshotItem(0).dispatchEvent(
-      new MouseEvent('click', {
-        view: window,
-        bubbles: true,
-        cancelable: true
-      })
-    );
-    ''')
+    # common.driver.execute_script('''
+    # document.evaluate(
+    #   '//button[@data-provider="google"]',
+    #   document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null
+    # ).snapshotItem(0).dispatchEvent(
+    #   new MouseEvent('click', {
+    #     view: window,
+    #     bubbles: true,
+    #     cancelable: true
+    #   })
+    # );
+    # ''')
+    click('Continue with Google')
 
-    WebDriverWait(common.driver, 5).until(
-        expected_conditions.presence_of_element_located((By.XPATH, '//input[@type="email"]'))
-    )
+    # WebDriverWait(common.driver, 5).until(
+    #     expected_conditions.presence_of_element_located((By.XPATH, '//input[@type="email"]'))
+    # )
+    wait(5.0)
 
-    common.driver.execute_script(f'''
-    const google_email_input = document.evaluate('//input[@type="email"]', document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null).snapshotItem(0);
-    google_email_input.value = '{common.config['email']}';
-    google_email_input.dispatchEvent(
-      new Event('input', {{
-        view: window,
-        bubbles: true,
-        cancelable: true
-      }})
-    );
-    ''')
+    # common.driver.execute_script(f'''
+    # const google_email_input = document.evaluate('//input[@type="email"]', document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null).snapshotItem(0);
+    # google_email_input.value = '{common.config['email']}';
+    # google_email_input.dispatchEvent(
+    #   new Event('input', {{
+    #     view: window,
+    #     bubbles: true,
+    #     cancelable: true
+    #   }})
+    # );
+    # ''')
+    input('Email or phone', common.config['email'])
 
-    WebDriverWait(common.driver, 5).until(
-        expected_conditions.presence_of_element_located((By.XPATH, '//*[@id="identifierNext"]'))
-    )
+    # WebDriverWait(common.driver, 5).until(
+    #     expected_conditions.presence_of_element_located((By.XPATH, '//*[@id="identifierNext"]'))
+    # )
+    wait(5.0)
 
-    common.driver.execute_script('''
-    document.evaluate(
-      '//*[@id="identifierNext"]',
-      document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null
-    ).snapshotItem(0).dispatchEvent(
-      new MouseEvent('click', {
-        view: window,
-        bubbles: true,
-        cancelable: true
-      })
-    );
-    ''')
+    # common.driver.execute_script('''
+    # document.evaluate(
+    #   '//*[@id="identifierNext"]',
+    #   document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null
+    # ).snapshotItem(0).dispatchEvent(
+    #   new MouseEvent('click', {
+    #     view: window,
+    #     bubbles: true,
+    #     cancelable: true
+    #   })
+    # );
+    # ''')
+    click('Next')
 
-    WebDriverWait(common.driver, 10).until(
-        expected_conditions.element_to_be_clickable((By.XPATH, '//input[@type="password"]'))
-    ).click()
+    # WebDriverWait(common.driver, 10).until(
+    #     expected_conditions.element_to_be_clickable((By.XPATH, '//input[@type="password"]'))
+    # ).click()
+    wait(10.0)
 
-    ActionChains(common.driver).send_keys(common.config['password']).send_keys(Keys.ENTER).perform()
+    # ActionChains(common.driver).send_keys(common.config['password']).send_keys(Keys.ENTER).perform()
+    fill(common.config['password'])
+    fill(Keys.ENTER)
+    wait(stability_duration = 5.0)
+
+    common.driver.maximize_window()
+    wait(1.0)
 
     remove_portal()
 
+# Internal Cell
+from selenium.common.exceptions import NoSuchElementException
+
+# Cell
 def open_chat(conversation_id = ''):
+    from .automation import driver
+    common.driver = driver
     if conversation_id == '':
-        common.driver.get('https://chat.openai.com')
+        common.driver.get('https://chatgpt.com/')
     else:
-        common.driver.get(f'https://chat.openai.com/c/{conversation_id}')
+        common.driver.get(f'https://chatgpt.com/c/{conversation_id}')
         if common.conversation_id != conversation_id:
             common.conversation_id = conversation_id
             common.parent_message_id = ''
 
-    WebDriverWait(common.driver, 30).until(
-        lambda driver: driver.execute_script('return document.readyState') == 'complete'
-    )
+    # WebDriverWait(common.driver, 30).until(
+    #     lambda driver: driver.execute_script('return document.readyState') == 'complete'
+    # )
+    wait(5.0)
 
     remove_portal()
 
 def remove_portal():
     while True:
+        # try:
+        #     WebDriverWait(common.driver, 5).until(
+        #         expected_conditions.element_to_be_clickable((By.XPATH, '//div[text()="Next"]'))
+        #     ).click()
+        # except TimeoutException:
+        #     break
         try:
-            WebDriverWait(common.driver, 5).until(
-                expected_conditions.element_to_be_clickable((By.XPATH, '//div[text()="Next"]'))
-            ).click()
-        except TimeoutException:
+            click('Next')
+            wait(5.0)
+        except NoSuchElementException:
             break
+    # try:
+    #     WebDriverWait(common.driver, 5).until(
+    #         expected_conditions.element_to_be_clickable((By.XPATH, '//div[text()="Done"]'))
+    #     ).click()
+    # except TimeoutException:
+    #     pass
     try:
-        WebDriverWait(common.driver, 5).until(
-            expected_conditions.element_to_be_clickable((By.XPATH, '//div[text()="Done"]'))
-        ).click()
-    except TimeoutException:
+        click('Done')
+        wait(5.0)
+    except NoSuchElementException:
         pass
 
 # Internal Cell
@@ -392,37 +432,60 @@ chatgpt_textbox = (By.XPATH, '//textarea[@id="prompt-textarea"]')
 chatgpt_disabled_button = (By.XPATH, '//textarea/following-sibling::button[@disabled]')
 chatgpt_enabled_button = (By.XPATH, '//textarea/following-sibling::button[not(@disabled)]')
 chatgpt_streaming = (By.CLASS_NAME, 'result-streaming')
-chatgpt_response = (By.XPATH, '//div[starts-with(@class, "flex flex-grow flex-col gap-3")]')
+chatgpt_response = (By.XPATH, '//div[starts-with(@class, "markdown prose w-full break-words")]')
 chatgpt_red_500 = (By.XPATH, '//div[contains(@class, "border-red-500 bg-red-500/10")]')
-chatgpt_big_response = (By.XPATH, '//div[@class="flex-1 overflow-hidden"]//div[p]')
-chatgpt_small_response = (By.XPATH, '//div[starts-with(@class, "markdown prose w-full break-words")]')
+chatgpt_big_response = (By.XPATH, '//div[@class="flex-1 overflow-hidden"]//div[p or pre]')
+chatgpt_small_response = (By.XPATH, '//div[@class="flex-1 overflow-hidden"]//code')
+
+# Internal Cell
+from typing import Generator
+
+# Internal Cell
+from .automation import exists, touch
 
 # Cell
 def request(prompt: str) -> None:
-    try:
-        textbox = WebDriverWait(common.driver, 5).until(
-            expected_conditions.element_to_be_clickable(chatgpt_textbox)
-        )
-    except TimeoutException:
+    # try:
+    #     textbox = WebDriverWait(common.driver, 5).until(
+    #         expected_conditions.element_to_be_clickable(chatgpt_textbox)
+    #     )
+    # except TimeoutException:
+    #     open_chat(common.conversation_id)
+    #     textbox = WebDriverWait(common.driver, 5).until(
+    #         expected_conditions.element_to_be_clickable(chatgpt_textbox)
+    #     )
+    # textbox.click()
+    click('ChatGPT can make mistakes. Check important info.')
+    textbox = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../assets/message-chatgpt.png'))
+    textbox = 'assets/message-chatgpt.png'
+    if not exists(textbox):
         open_chat(common.conversation_id)
-        textbox = WebDriverWait(common.driver, 5).until(
-            expected_conditions.element_to_be_clickable(chatgpt_textbox)
-        )
-    textbox.click()
+    click('ChatGPT can make mistakes. Check important info.')
+    touch(textbox)
     # textbox.send_keys(prompt.strip())
-    common.driver.execute_script('''
-    var element = arguments[0], txt = arguments[1];
-    element.value += txt;
-    element.dispatchEvent(new Event("change"));
-    ''',
-        textbox,
-        prompt.strip(),
-    )
+    # common.driver.execute_script('''
+    # var element = arguments[0], txt = arguments[1];
+    # element.value += txt;
+    # element.dispatchEvent(new Event("change"));
+    # ''',
+    #     textbox,
+    #     prompt.strip(),
+    # )
+    for line in prompt.strip().split('\n'):
+        fill(line)
+        ActionChains(common.driver).key_down(Keys.SHIFT).send_keys(Keys.ENTER).key_up(Keys.SHIFT).perform()
     # WebDriverWait(common.driver, 3).until_not(
     #     expected_conditions.presence_of_element_located(chatgpt_disabled_button)
     # )
-    textbox.send_keys('\n')
-    textbox.send_keys(Keys.ENTER)
+    click('ChatGPT can make mistakes. Check important info.')
+    wait(1.0)
+    # textbox.send_keys('\n')
+    # textbox.send_keys(Keys.ENTER)
+    send_button = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../assets/send-button.png'))
+    send_button = 'assets/send-button.png'
+    touch(send_button)
+    click('ChatGPT can make mistakes. Check important info.')
+    wait(1.0)
     # try:
     #     WebDriverWait(common.driver, 5).until(
     #         expected_conditions.element_to_be_clickable(chatgpt_enabled_button)
@@ -431,31 +494,37 @@ def request(prompt: str) -> None:
     #     pass
 
 def get_last_response():
-    responses = common.driver.find_elements(*chatgpt_big_response)
-    if responses != []:
-        return responses[-1]
     responses = common.driver.find_elements(*chatgpt_small_response)
     if responses != []:
         return responses[-1]
+    responses = common.driver.find_elements(*chatgpt_big_response)
+    if responses != []:
+        return responses[-1]
+    responses = common.driver.find_elements(*chatgpt_response)
+    if responses != []:
+        return responses[-1]
 
-def get_response() -> str:
+def get_response() -> Generator[str, None, None]:
     try:
         result_streaming = WebDriverWait(common.driver, 30).until(
             expected_conditions.presence_of_element_located(chatgpt_streaming)
         )
     except TimeoutException:
-        response = common.driver.find_elements(*chatgpt_response)[-1]
-        is_error = common.driver.find_elements(*chatgpt_red_500) != []
+        response = get_last_response()
+        error = common.driver.find_elements(*chatgpt_red_500) != []
         sys.stderr.write(
             'TimeoutException: having waited 30 seconds for result-streaming\n'
             f'response.text = {response.text}\n'
-            f'is_error = {is_error}\n'
+            f'error = {error}\n'
         )
-        if not is_error:
+        if not error:
             yield markdownize(response.get_attribute('innerHTML'))
-        return
+        result_streaming = common.driver.find_elements(*chatgpt_streaming)
     while result_streaming:
         response = get_last_response()
+        if response is None:
+            result_streaming = common.driver.find_elements(*chatgpt_streaming)
+            continue
         try:
             if 'text-red' in response.get_attribute('class'):
                 sys.stderr.write(f'Error Responding: response.text = {response.text}\n')
