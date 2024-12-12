@@ -30,6 +30,9 @@ entries:
     - output: web,pdf
       title: DuckDuckGo Search API
       url: tools_duckduckgo.html
+    - output: web,pdf
+      title: Annotating Kanji with Hiragana
+      url: tools_pyknp.html
     output: web
     title: ipymock
   output: web

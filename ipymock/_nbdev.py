@@ -58,7 +58,7 @@ index = {"get_test_funcs": "1_core.ipynb",
          "mouseMarkLD.style.zIndex": "2_automation.ipynb",
          "convert_md_with_ruby_to_html": "2_automation.ipynb",
          "convert_md_content_to_html": "2_automation.ipynb",
-         "write_html_file": "2_automation.ipynb",
+         "save_file": "2_automation.ipynb",
          "convert_html_with_ruby_to_png": "2_automation.ipynb",
          "convert_md_with_ruby_to_png": "2_automation.ipynb",
          "dialog_for_printing": "2_automation.ipynb",
@@ -129,14 +129,18 @@ index = {"get_test_funcs": "1_core.ipynb",
          "final_objective": "4_agi.ipynb",
          "test_baby_agi": "4_agi.ipynb",
          "mock_baby_agi": "4_agi.ipynb",
-         "DuckDuckGoSearchAPIWrapper": "4_tools_duckduckgo.ipynb"}
+         "DuckDuckGoSearchAPIWrapper": "4_tools_duckduckgo.ipynb",
+         "is_halfwidth": "4_tools_pyknp.ipynb",
+         "halfwidth_to_fullwidth": "4_tools_pyknp.ipynb",
+         "annotate": "4_tools_pyknp.ipynb"}
 
 modules = ["__init__.py",
            "automation.py",
            "browser.py",
            "llm.py",
            "agi.py",
-           "reader.py"]
+           "reader.py",
+           "nlp.py"]
 
 doc_url = "https://seii-saintway.github.io/ipymock/"
 

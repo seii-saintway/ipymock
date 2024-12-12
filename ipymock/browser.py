@@ -285,6 +285,7 @@ def init(chrome_args = set()):
 
 # Internal Cell
 from .automation import new, wait, click, input, fill
+from selenium.common.exceptions import NoSuchElementException
 
 # Cell
 def login():
@@ -312,7 +313,7 @@ def login():
     # WebDriverWait(common.driver, 5).until(
     #     expected_conditions.presence_of_element_located((By.XPATH, '//button[@data-provider="google"]'))
     # )
-    wait(5.0)
+    wait(5.0, stability_duration = 3.0)
 
     # common.driver.execute_script('''
     # document.evaluate(
@@ -344,7 +345,7 @@ def login():
     #   }})
     # );
     # ''')
-    input('Email or phone', common.config['email'])
+    input(common.config['email'], 'Email or phone')
 
     # WebDriverWait(common.driver, 5).until(
     #     expected_conditions.presence_of_element_located((By.XPATH, '//*[@id="identifierNext"]'))
@@ -368,20 +369,21 @@ def login():
     # WebDriverWait(common.driver, 10).until(
     #     expected_conditions.element_to_be_clickable((By.XPATH, '//input[@type="password"]'))
     # ).click()
-    wait(10.0)
+    wait(10.0, stability_duration = 5.0)
 
     # ActionChains(common.driver).send_keys(common.config['password']).send_keys(Keys.ENTER).perform()
     fill(common.config['password'])
-    fill(Keys.ENTER)
+    # fill(Keys.ENTER)
+    try:
+        click('Next')
+    except NoSuchElementException:
+        pass
     wait(stability_duration = 5.0)
 
     common.driver.maximize_window()
     wait(1.0)
 
     remove_portal()
-
-# Internal Cell
-from selenium.common.exceptions import NoSuchElementException
 
 # Cell
 def open_chat(conversation_id = ''):
@@ -435,13 +437,13 @@ chatgpt_streaming = (By.CLASS_NAME, 'result-streaming')
 chatgpt_response = (By.XPATH, '//div[starts-with(@class, "markdown prose w-full break-words")]')
 chatgpt_red_500 = (By.XPATH, '//div[contains(@class, "border-red-500 bg-red-500/10")]')
 chatgpt_big_response = (By.XPATH, '//div[@class="flex-1 overflow-hidden"]//div[p or pre]')
-chatgpt_small_response = (By.XPATH, '//div[@class="flex-1 overflow-hidden"]//code')
+chatgpt_small_response = (By.XPATH, './/code[span]')
 
 # Internal Cell
 from typing import Generator
 
 # Internal Cell
-from .automation import exists, touch
+# from ipymock.automation import exists, touch
 
 # Cell
 def request(prompt: str) -> None:
@@ -455,13 +457,21 @@ def request(prompt: str) -> None:
     #         expected_conditions.element_to_be_clickable(chatgpt_textbox)
     #     )
     # textbox.click()
-    click('ChatGPT can make mistakes. Check important info.')
-    textbox = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../assets/message-chatgpt.png'))
-    textbox = 'assets/message-chatgpt.png'
-    if not exists(textbox):
+
+    # click('ChatGPT can make mistakes. Check important info.')
+    # textbox = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../assets/message-chatgpt.png'))
+    # textbox = 'assets/message-chatgpt.png'
+    # from ipymock.automation import exists
+    # if not exists(textbox):
+    #     open_chat(common.conversation_id)
+    try:
+        click('Message ChatGPT')
+    except NoSuchElementException:
         open_chat(common.conversation_id)
-    click('ChatGPT can make mistakes. Check important info.')
-    touch(textbox)
+    # click('ChatGPT can make mistakes. Check important info.')
+    # touch(textbox)
+    click('Message ChatGPT')
+
     # textbox.send_keys(prompt.strip())
     # common.driver.execute_script('''
     # var element = arguments[0], txt = arguments[1];
@@ -474,18 +484,23 @@ def request(prompt: str) -> None:
     for line in prompt.strip().split('\n'):
         fill(line)
         ActionChains(common.driver).key_down(Keys.SHIFT).send_keys(Keys.ENTER).key_up(Keys.SHIFT).perform()
+
     # WebDriverWait(common.driver, 3).until_not(
     #     expected_conditions.presence_of_element_located(chatgpt_disabled_button)
     # )
-    click('ChatGPT can make mistakes. Check important info.')
-    wait(1.0)
+    wait(stability_duration = 3.0)
+
     # textbox.send_keys('\n')
     # textbox.send_keys(Keys.ENTER)
-    send_button = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../assets/send-button.png'))
-    send_button = 'assets/send-button.png'
-    touch(send_button)
+
+    # click('ChatGPT can make mistakes. Check important info.')
+    # send_button = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../assets/send-button.png'))
+    # send_button = 'assets/send-button.png'
+    # touch(send_button)
+    fill(Keys.ENTER)
     click('ChatGPT can make mistakes. Check important info.')
     wait(1.0)
+
     # try:
     #     WebDriverWait(common.driver, 5).until(
     #         expected_conditions.element_to_be_clickable(chatgpt_enabled_button)
@@ -494,26 +509,24 @@ def request(prompt: str) -> None:
     #     pass
 
 def get_last_response():
-    responses = common.driver.find_elements(*chatgpt_small_response)
-    if responses != []:
-        return responses[-1]
-    responses = common.driver.find_elements(*chatgpt_big_response)
-    if responses != []:
-        return responses[-1]
-    responses = common.driver.find_elements(*chatgpt_response)
-    if responses != []:
-        return responses[-1]
+    for xpath in chatgpt_response, chatgpt_big_response:
+        responses = common.driver.find_elements(*xpath)
+        if responses != []:
+            elements = responses[-1].find_elements(*chatgpt_small_response)
+            if len(elements) == 1:
+                return elements[0]
+            return responses[-1]
 
 def get_response() -> Generator[str, None, None]:
     try:
-        result_streaming = WebDriverWait(common.driver, 30).until(
+        result_streaming = WebDriverWait(common.driver, 5).until(
             expected_conditions.presence_of_element_located(chatgpt_streaming)
         )
     except TimeoutException:
         response = get_last_response()
         error = common.driver.find_elements(*chatgpt_red_500) != []
         sys.stderr.write(
-            'TimeoutException: having waited 30 seconds for result-streaming\n'
+            'TimeoutException: having waited 5 seconds for result-streaming\n'
             f'response.text = {response.text}\n'
             f'error = {error}\n'
         )

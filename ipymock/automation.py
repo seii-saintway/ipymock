@@ -3,17 +3,20 @@
 __all__ = ['driver', 'device_pixel_ratio', 'init', 'quit', 'ok', 'last', 'new', 'close', 'find_elements',
            'find_elements', 'find_element', 'click', 'input', 'get_html_hash', 'wait', 'screen_hash', 'watch',
            'try_log_screen', 'find_position', 'inject', 'get_mouse_position', 'move_to_center', 'move_and_click',
-           'exists', 'touch', 'fill', 'convert_md_with_ruby_to_html', 'convert_md_content_to_html', 'write_html_file',
+           'exists', 'touch', 'fill', 'convert_md_with_ruby_to_html', 'convert_md_content_to_html', 'save_file',
            'convert_html_with_ruby_to_png', 'convert_md_with_ruby_to_png', 'dialog_for_printing',
            'convert_html_with_ruby_to_pdf', 'convert_md_with_ruby_to_pdf']
 
 # Internal Cell
-import os
+import os, typing
+from selenium.webdriver.remote.webdriver import WebDriver
+
+# Internal Cell
 import undetected_chromedriver
 from webdriver_manager.chrome import ChromeDriverManager
 
 # Cell
-driver = None
+driver: typing.Optional[WebDriver] = None
 device_pixel_ratio = 1
 
 # Cell
@@ -112,7 +115,15 @@ def find_elements(prompt, exactly = True):
     for scope in range(1, 5):
         elements = driver.find_elements(By.XPATH, f'//*[.{"/*" * (scope - 1)} and not(.{"/*" * scope}) and contains(., "{prompt}")]')
         elements = [elem for elem in elements if elem.is_displayed() and (elem.text == prompt or not exactly)]
-        logger.info(f'Search for {prompt} in scope {scope}: found {len(elements)} element(s)')
+        logger.info(f'Search for text "{prompt}" in scope {scope}: found {len(elements)} element(s)')
+        if elements:
+            return elements
+        if exactly:
+            elements = driver.find_elements(By.XPATH, f'//*[.{"/*" * (scope - 1)} and not(.{"/*" * scope}) and @*[.="{prompt}"]]')
+        else:
+            elements = driver.find_elements(By.XPATH, f'//*[.{"/*" * (scope - 1)} and not(.{"/*" * scope}) and @*[contains(., "{prompt}")]]')
+        elements = [elem for elem in elements if elem.is_displayed()]
+        logger.info(f'Search for attr "{prompt}" in scope {scope}: found {len(elements)} element(s)')
         if elements:
             return elements
     raise NoSuchElementException
@@ -133,27 +144,33 @@ def find_element(prompt, closest_prompt = None):
 from selenium.webdriver.common.action_chains import ActionChains
 
 # Cell
-def click(prompt, closest_prompt = None):
+def click(prompt = None, closest_prompt = None, xoffset: int = 0, yoffset: int = 0):
+    if prompt is None:
+        return move_and_click(xoffset, yoffset, True)
     if isinstance(prompt, str):
         prompt = find_element(prompt, closest_prompt)
-    ActionChains(driver).move_to_element(prompt).click().perform()
+    ActionChains(driver).move_to_element_with_offset(prompt, xoffset, yoffset).click().perform()
     return prompt
 
 # Cell
-def input(prompt, text, closest_prompt = None):
-    prompt = click(prompt, closest_prompt)
+def input(text, prompt = None, closest_prompt = None, xoffset: int = 0, yoffset: int = 0):
+    prompt = click(prompt, closest_prompt, xoffset, yoffset)
     ActionChains(driver).send_keys(text).perform()
     return prompt
 
 # Internal Cell
 import hashlib, time
+from selenium.common.exceptions import StaleElementReferenceException
 
 # Cell
 def get_html_hash(xpath = '//body'):
     """Get the hash of the element's outerHTML."""
     # driver is the Selenium WebDriver global instance.
     elements = driver.find_elements(By.XPATH, xpath)
-    html = elements[-1].get_attribute('outerHTML') if elements else ''
+    try:
+        html = elements[-1].get_attribute('outerHTML') if elements else ''
+    except StaleElementReferenceException:
+        html = ''
     return hashlib.md5(html.encode('utf-8')).hexdigest(), time.time()
 
 # Cell
@@ -365,12 +382,17 @@ def move_to_center():
     ActionChains(driver).move_to_element(body).perform()
     return body.rect['x'] + body.rect['width'] >> 1, body.rect['y'] + body.rect['height'] >> 1
 
-def move_and_click(x, y):
-    # Retrieve the mouse coordinates.
-    center_x, center_y = move_to_center()
-    logger.debug(f'Get center position: {center_x}, {center_y}')
-    # Move to the specified coordinates (x, y) and click.
-    ActionChains(driver).move_by_offset(x - center_x, y - center_y).click().perform()
+def move_and_click(x, y, offset = True):
+    if offset:
+        xoffset, yoffset = x, y
+    else:
+        # Retrieve the mouse coordinates.
+        center_x, center_y = move_to_center()
+        logger.debug(f'Get center position: {center_x}, {center_y}')
+        xoffset, yoffset = x - center_x, y - center_y
+    # Move to the specified coordinates and click.
+    ActionChains(driver).move_by_offset(xoffset, yoffset).click().perform()
+    return xoffset, yoffset
 
 def exists(image):
     try:
@@ -382,7 +404,7 @@ def exists(image):
 def touch(image, text = None):
     try:
         x, y = find_position(image)
-        move_and_click(x, y)
+        move_and_click(x, y, False)
         if isinstance(text, str):
             fill(text)
     except:
@@ -408,7 +430,7 @@ def convert_md_with_ruby_to_html(md_file_path):
 
     # Create an HTML document while preserving the <ruby> tags
     html_document = convert_md_content_to_html(md_content)
-    write_html_file(html_file_path, html_document)
+    save_file(html_file_path, html_document)
     return html_file_path, html_document
 
 def convert_md_content_to_html(md_content):
@@ -434,10 +456,10 @@ def convert_md_content_to_html(md_content):
 </html>
 """
 
-def write_html_file(html_file_path, html_content):
-    ''' Write the HTML content to a file '''
-    with open(html_file_path, 'w', encoding='utf-8') as html_file:
-        html_file.write(html_content)
+def save_file(file_path, content):
+    ''' Write the content to a file '''
+    with open(file_path, 'w', encoding='utf-8') as file:
+        file.write(content)
 
 # Cell
 def convert_html_with_ruby_to_png(html_file_path):
@@ -459,7 +481,8 @@ def convert_html_with_ruby_to_png(html_file_path):
     # Get the current window size
     current_window_size = driver.get_window_size()
     # Set the window size to the resolution of iPhone 16 Pro Max
-    driver.set_window_size(642, 1389)
+    # driver.set_window_size(642, 1389)
+    driver.set_window_size(642/3*2, 1389/3*2)
     # Capture the page and save as PNG
     driver.save_screenshot(png_file_path)
     # Reset the window size
