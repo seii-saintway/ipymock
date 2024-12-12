@@ -4,7 +4,6 @@ __all__ = ['get_test_funcs', 'print_result', 'do']
 
 # Cell
 import py
-import sys
 import traceback
 
 import _pytest.config
