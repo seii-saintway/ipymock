@@ -2,9 +2,9 @@
 
 __all__ = ['common', 'get_conversations', 'get_conversation', 'handle_conversation_detail', 'start_conversation',
            'generate_title', 'rename_title', 'delete_conversation', 'recover_conversation', 'clear_conversations',
-           'init', 'login', 'open_chat', 'remove_portal', 'request', 'get_last_response', 'get_response', 'ask',
-           'get_screenshot', 'attrdict', 'attributize', 'retry_on_status_code', 'content', 'new_id', 'delta',
-           'chat_delta', 'mock_create', 'mock_chat_create', 'mock_openai']
+           'init', 'login', 'open_chat', 'remove_portal', 'input_prompt', 'request', 'get_last_response',
+           'get_response', 'ask', 'get_screenshot', 'attrdict', 'attributize', 'retry_on_status_code', 'content',
+           'new_id', 'delta', 'chat_delta', 'mock_create', 'mock_chat_create', 'mock_openai']
 
 # Internal Cell
 from queue import Queue
@@ -42,6 +42,19 @@ with open(os.path.expanduser('~/.config/ipymock/config.json'), 'r') as f:
     common.chat_gpt_base_url = common.config.get('chat_gpt_base_url', common.chat_gpt_base_url)
     common.access_token = common.config.get('access_token', common.access_token)
     common.conversation_id = common.config.get('conversation_id', common.conversation_id)
+
+# Internal Cell
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+handler = logging.StreamHandler()
+handler.setFormatter(logging.Formatter(
+    fmt = '[%(asctime)s][%(levelname)s]<%(name)s> %(message)s',
+    datefmt = '%H:%M:%S'
+))
+logger.addHandler(handler)
 
 # Cell
 def get_conversations():
@@ -289,7 +302,22 @@ from selenium.common.exceptions import NoSuchElementException
 
 # Cell
 def login():
-    new('https://chatgpt.com/auth/login')
+    if 'github' in common.chat_gpt_base_url:
+        new('https://github.com/login')
+        wait(5.0)
+        input(common.config['email'], 'Username or email address', yoffset = 35)
+        wait(5.0)
+        input(common.config['password'], 'Password', yoffset = 35)
+        wait(5.0)
+        click('Sign in')
+        wait(5.0)
+        click('Use passkey')
+        wait(stability_duration = 5.0)
+        common.driver.maximize_window()
+        wait(1.0)
+        return
+
+    new(f'{common.chat_gpt_base_url}/auth/login')
 
     # WebDriverWait(common.driver, 5).until(
     #     expected_conditions.presence_of_element_located((By.XPATH, '//*[text()="Log in"]'))
@@ -390,9 +418,9 @@ def open_chat(conversation_id = ''):
     from .automation import driver
     common.driver = driver
     if conversation_id == '':
-        common.driver.get('https://chatgpt.com/')
+        common.driver.get(f'{common.chat_gpt_base_url}/')
     else:
-        common.driver.get(f'https://chatgpt.com/c/{conversation_id}')
+        common.driver.get(f'{common.chat_gpt_base_url}/c/{conversation_id}')
         if common.conversation_id != conversation_id:
             common.conversation_id = conversation_id
             common.parent_message_id = ''
@@ -402,6 +430,8 @@ def open_chat(conversation_id = ''):
     # )
     wait(5.0)
 
+    if 'copilot' in common.chat_gpt_base_url:
+        return
     remove_portal()
 
 def remove_portal():
@@ -446,7 +476,36 @@ from typing import Generator
 # from ipymock.automation import exists, touch
 
 # Cell
+def input_prompt(prompt):
+    # textbox.send_keys(prompt.strip())
+    # common.driver.execute_script('''
+    # var element = arguments[0], txt = arguments[1];
+    # element.value += txt;
+    # element.dispatchEvent(new Event("change"));
+    # ''',
+    #     textbox,
+    #     prompt.strip(),
+    # )
+    for line in prompt.strip().split('\n'):
+        fill(line)
+        ActionChains(common.driver).key_down(Keys.SHIFT).send_keys(Keys.ENTER).key_up(Keys.SHIFT).perform()
+
+    # WebDriverWait(common.driver, 3).until_not(
+    #     expected_conditions.presence_of_element_located(chatgpt_disabled_button)
+    # )
+    wait(stability_duration = 3.0)
+
+    # textbox.send_keys('\n')
+    # textbox.send_keys(Keys.ENTER)
+
 def request(prompt: str) -> None:
+    if 'copilot' in common.chat_gpt_base_url:
+        click('Ask Copilot')
+        input_prompt(prompt)
+        fill(Keys.ENTER)
+        wait(1.0)
+        return
+
     # try:
     #     textbox = WebDriverWait(common.driver, 5).until(
     #         expected_conditions.element_to_be_clickable(chatgpt_textbox)
@@ -472,26 +531,7 @@ def request(prompt: str) -> None:
     # touch(textbox)
     click('Message ChatGPT')
 
-    # textbox.send_keys(prompt.strip())
-    # common.driver.execute_script('''
-    # var element = arguments[0], txt = arguments[1];
-    # element.value += txt;
-    # element.dispatchEvent(new Event("change"));
-    # ''',
-    #     textbox,
-    #     prompt.strip(),
-    # )
-    for line in prompt.strip().split('\n'):
-        fill(line)
-        ActionChains(common.driver).key_down(Keys.SHIFT).send_keys(Keys.ENTER).key_up(Keys.SHIFT).perform()
-
-    # WebDriverWait(common.driver, 3).until_not(
-    #     expected_conditions.presence_of_element_located(chatgpt_disabled_button)
-    # )
-    wait(stability_duration = 3.0)
-
-    # textbox.send_keys('\n')
-    # textbox.send_keys(Keys.ENTER)
+    input_prompt(prompt)
 
     # click('ChatGPT can make mistakes. Check important info.')
     # send_button = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../assets/send-button.png'))
@@ -509,15 +549,59 @@ def request(prompt: str) -> None:
     #     pass
 
 def get_last_response():
+    if 'copilot' in common.chat_gpt_base_url:
+        chatgpt_response = (By.XPATH, '//div[contains(@class, "markdown-body")]')
+        chatgpt_big_response = (By.XPATH, '//div[starts-with(@class, "js-snippet-clipboard-copy-unpositioned")]//div[p or pre]')
+        chatgpt_small_response = (By.XPATH, './/code[div]')
     for xpath in chatgpt_response, chatgpt_big_response:
-        responses = common.driver.find_elements(*xpath)
+        while True:
+            responses = common.driver.find_elements(*xpath)
+            elements = []
+            if responses != []:
+                try:
+                    elements = responses[-1].find_elements(*chatgpt_small_response)
+                except StaleElementReferenceException:
+                    continue
+            break
+        if len(elements) == 1:
+            return elements[0]
         if responses != []:
-            elements = responses[-1].find_elements(*chatgpt_small_response)
-            if len(elements) == 1:
-                return elements[0]
             return responses[-1]
 
 def get_response() -> Generator[str, None, None]:
+    if 'copilot' in common.chat_gpt_base_url:
+        from .automation import get_html_hash
+        # Get the initial hash value
+        previous_hash, previous_time = get_html_hash()
+        response = get_last_response()
+
+        # Wait until the HTML does not change
+        start_time = time.time()
+        while True:
+            time.sleep(0.1)
+
+            # Get the current hash value
+            current_hash, current_time = get_html_hash()
+            response = get_last_response()
+
+            # Check if the hash value has stabilized
+            if current_hash == previous_hash:
+                if current_time - previous_time >= 5.0:
+                    logger.info('HTML content has stabilized.')
+                    break
+            else:
+                # Update hash and time if the content changes
+                previous_hash, previous_time = current_hash, current_time
+            yield markdownize(response.get_attribute('innerHTML'))
+
+            # Check for timeout
+            if current_time - start_time >= float('inf'):
+                logger.info('Wait for HTML stabilization timed out.')
+                break
+        response = get_last_response()
+        yield markdownize(response.get_attribute('innerHTML'))
+        return
+
     try:
         result_streaming = WebDriverWait(common.driver, 5).until(
             expected_conditions.presence_of_element_located(chatgpt_streaming)

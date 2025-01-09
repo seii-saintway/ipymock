@@ -50,12 +50,12 @@ class DuckDuckGoSearchAPIWrapper(BaseModel):
             max_results=self.max_results,
         )
         if results is None or len(results) == 0:
-            return f'搜索「{query}」没有发现好的｛DuckDuckGo 搜索结果：{results}｝'
+            return f'No suitable DuckDuckGo search results found for "{query}": {{{results}}}'
         snippets = '\n'.join([result['body'] for result in results])
         return (
-            f'用 DuckDuckGo 搜索「{query}」的结果：「\n'
+            f'Results for the DuckDuckGo search "{query}": {{\n'
             f'{snippets}\n'
-            f'」'
+            f'}}'
         )
 
     def results(self, query: str, num_results: int) -> List[Dict]:
