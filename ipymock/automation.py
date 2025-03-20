@@ -20,7 +20,7 @@ driver: typing.Optional[WebDriver] = None
 device_pixel_ratio = 1
 
 # Cell
-def init(*arguments):
+def init(*arguments, driver_version: typing.Optional[str] = None, browser_executable_path: typing.Optional[str] = None):
     chrome_options = undetected_chromedriver.ChromeOptions()
     for argument in arguments:
         if isinstance(argument, str):
@@ -29,8 +29,9 @@ def init(*arguments):
     driver = undetected_chromedriver.Chrome(
         options = chrome_options,
         driver_executable_path = os.path.join(
-            os.path.dirname(ChromeDriverManager().install()), 'chromedriver.exe' if os.name == 'nt' else 'chromedriver'
-        )
+            os.path.dirname(ChromeDriverManager(driver_version = driver_version).install()), 'chromedriver.exe' if os.name == 'nt' else 'chromedriver'
+        ),
+        browser_executable_path = browser_executable_path
     )
     global device_pixel_ratio
     device_pixel_ratio = driver.execute_script('return window.devicePixelRatio;')
