@@ -1,6 +1,6 @@
 ---
 
-title: Annotating Kanji with Hiragana
+title: Annotating Kanji with Hiragana - Japanese Text Processing with PyKNP
 
 
 keywords: fastai
@@ -31,9 +31,57 @@ nb_path: "nbs/4_tools_pyknp.ipynb"
 
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
+<p>This module provides Japanese natural language processing capabilities using PyKNP (Python interface for JUMAN++ and KNP).</p>
+<h2 id="Overview">Overview<a class="anchor-link" href="#Overview"> </a></h2><p>The NLP module enables:</p>
+<ul>
+<li><strong>Morphological Analysis</strong>: Break down Japanese text into morphemes using JUMAN++</li>
+<li><strong>Ruby Annotation</strong>: Automatically add furigana (reading aids) to kanji characters</li>
+<li><strong>Text Formatting</strong>: Convert between halfwidth and fullwidth characters</li>
+<li><strong>HTML Integration</strong>: Process HTML content and add ruby annotations to Japanese text</li>
+</ul>
+<h2 id="Key-Features">Key Features<a class="anchor-link" href="#Key-Features"> </a></h2><ul>
+<li>Automatic kanji-to-hiragana annotation</li>
+<li>Character width detection and conversion</li>
+<li>HTML content processing with Beautiful Soup</li>
+<li>Interactive display support for Jupyter notebooks</li>
+</ul>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Installation-Requirements">Installation Requirements<a class="anchor-link" href="#Installation-Requirements"> </a></h2><p>Install PyKNP and JUMAN++ for Japanese morphological analysis:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
 <p>Install <a href="https://github.com/ku-nlp/jumanpp">JUMAN++</a></p>
 <div class="highlight"><pre><span></span>pip install pyknp
 </pre></div>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Core-Text-Processing-Functions">Core Text Processing Functions<a class="anchor-link" href="#Core-Text-Processing-Functions"> </a></h2><p>These functions handle Japanese text analysis and ruby annotation generation using JUMAN++ morphological analyzer.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="HTML-Processing">HTML Processing<a class="anchor-link" href="#HTML-Processing"> </a></h2><p>Additional dependencies for HTML content processing:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="HTML-Content-Annotation">HTML Content Annotation<a class="anchor-link" href="#HTML-Content-Annotation"> </a></h2><p>This function processes HTML content and adds ruby annotations to Japanese text within HTML elements.</p>
 
 </div>
 </div>

@@ -1,13 +1,13 @@
 {
   "ipymock": {
     "Overview": "/",
-    "iPyTest": "core.html",
-    "Browser Automation": "automation.html",
-    "Mock OpenAI API": "browser.html",
-    "LLM": "llm.html",
-    "Chinese BabyAGI": "agi.html",
-    "Document Readers": "tools_document.html",
-    "DuckDuckGo Search API": "tools_duckduckgo.html",
-    "Annotating Kanji with Hiragana": "tools_pyknp.html"
+    "iPyTest - Core PyTest Integration": "core.html",
+    "Browser Automation Module": "automation.html",
+    "OpenAI API Mocking Through Browser Automation": "browser.html",
+    "LLM Embedding Support": "llm.html",
+    "Chinese BabyAGI Implementation": "agi.html",
+    "Document Processing Tools": "tools_document.html",
+    "DuckDuckGo Search Integration": "tools_duckduckgo.html",
+    "Annotating Kanji with Hiragana - Japanese Text Processing with PyKNP": "tools_pyknp.html"
   }
 }

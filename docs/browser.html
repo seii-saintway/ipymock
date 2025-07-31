@@ -1,6 +1,6 @@
 ---
 
-title: Mock OpenAI API
+title: OpenAI API Mocking Through Browser Automation
 
 
 keywords: fastai
@@ -29,6 +29,28 @@ nb_path: "nbs/2_browser.ipynb"
 </div>
     {% endraw %}
 
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>This module provides OpenAI API mocking capabilities by automating ChatGPT through browser interactions, enabling testing without API costs.</p>
+<h2 id="Overview">Overview<a class="anchor-link" href="#Overview"> </a></h2><p>The browser module offers:</p>
+<ul>
+<li><strong>OpenAI API Mocking</strong>: Mock OpenAI completion and chat APIs using ChatGPT web interface</li>
+<li><strong>Browser-based Chat</strong>: Direct interaction with ChatGPT through Selenium automation</li>
+<li><strong>Multiple Authentication</strong>: Support for Google OAuth and GitHub authentication</li>
+<li><strong>Conversation Management</strong>: Handle conversation threads and message history</li>
+<li><strong>Response Streaming</strong>: Real-time response streaming mimicking OpenAI's API</li>
+</ul>
+<h2 id="Key-Components">Key Components<a class="anchor-link" href="#Key-Components"> </a></h2><ul>
+<li>Authentication and session management</li>
+<li>ChatGPT web interface automation</li>
+<li>OpenAI API mock implementations</li>
+<li>Response parsing and streaming</li>
+<li>Screenshot capture capabilities</li>
+</ul>
+
+</div>
+</div>
+</div>
     {% raw %}
     
 <div class="cell border-box-sizing code_cell rendered">
@@ -38,16 +60,21 @@ nb_path: "nbs/2_browser.ipynb"
 
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<hr>
-<p>Logging</p>
+<h2 id="Configuration-and-Logging">Configuration and Logging<a class="anchor-link" href="#Configuration-and-Logging"> </a></h2><p>Set up logging and load configuration for API endpoints and authentication.</p>
 
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<hr>
-<p>Using OpenAI Backend API</p>
+<h2 id="OpenAI-Backend-API-Integration">OpenAI Backend API Integration<a class="anchor-link" href="#OpenAI-Backend-API-Integration"> </a></h2><p>Direct API communication when using a backend proxy instead of browser automation.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Backend-API-Integration">Backend API Integration<a class="anchor-link" href="#Backend-API-Integration"> </a></h2><p>These functions handle direct API communication when using a backend proxy instead of browser automation.</p>
 
 </div>
 </div>
@@ -451,8 +478,14 @@ nb_path: "nbs/2_browser.ipynb"
 
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<hr>
-<p>Using Selenium Undetected Chrome for Operating ChatGPT</p>
+<h2 id="Selenium-Undetected-Chrome-for-ChatGPT">Selenium Undetected Chrome for ChatGPT<a class="anchor-link" href="#Selenium-Undetected-Chrome-for-ChatGPT"> </a></h2><p>Using undetected Chrome WebDriver to directly operate ChatGPT web interface for automation.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Browser-Automation-for-ChatGPT">Browser Automation for ChatGPT<a class="anchor-link" href="#Browser-Automation-for-ChatGPT"> </a></h2><p>This section implements direct browser automation to interact with ChatGPT's web interface, including authentication and conversation management.</p>
 
 </div>
 </div>
@@ -681,7 +714,7 @@ nb_path: "nbs/2_browser.ipynb"
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="input_prompt" class="doc_header"><code>input_prompt</code><a href="https://github.com/seii-saintway/ipymock/tree/main/ipymock/browser.py#L479" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>input_prompt</code>(<strong><code>prompt</code></strong>)</p>
+<h4 id="input_prompt" class="doc_header"><code>input_prompt</code><a href="https://github.com/seii-saintway/ipymock/tree/main/ipymock/browser.py#L483" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>input_prompt</code>(<strong><code>prompt</code></strong>)</p>
 </blockquote>
 
 </div>
@@ -706,7 +739,7 @@ nb_path: "nbs/2_browser.ipynb"
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="request" class="doc_header"><code>request</code><a href="https://github.com/seii-saintway/ipymock/tree/main/ipymock/browser.py#L501" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>request</code>(<strong><code>prompt</code></strong>:<code>str</code>)</p>
+<h4 id="request" class="doc_header"><code>request</code><a href="https://github.com/seii-saintway/ipymock/tree/main/ipymock/browser.py#L505" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>request</code>(<strong><code>prompt</code></strong>:<code>str</code>)</p>
 </blockquote>
 
 </div>
@@ -731,7 +764,7 @@ nb_path: "nbs/2_browser.ipynb"
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="get_last_response" class="doc_header"><code>get_last_response</code><a href="https://github.com/seii-saintway/ipymock/tree/main/ipymock/browser.py#L551" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>get_last_response</code>()</p>
+<h4 id="get_last_response" class="doc_header"><code>get_last_response</code><a href="https://github.com/seii-saintway/ipymock/tree/main/ipymock/browser.py#L555" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>get_last_response</code>()</p>
 </blockquote>
 
 </div>
@@ -929,8 +962,14 @@ nb_path: "nbs/2_browser.ipynb"
 
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<hr>
-<p>Mock OpenAI</p>
+<h2 id="OpenAI-API-Mock-Implementation">OpenAI API Mock Implementation<a class="anchor-link" href="#OpenAI-API-Mock-Implementation"> </a></h2><p>Complete OpenAI API compatibility by mocking responses using ChatGPT interactions.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="OpenAI-API-Mock-Implementation">OpenAI API Mock Implementation<a class="anchor-link" href="#OpenAI-API-Mock-Implementation"> </a></h2><p>These functions provide complete OpenAI API compatibility by mocking the original API responses using ChatGPT interactions.</p>
 
 </div>
 </div>

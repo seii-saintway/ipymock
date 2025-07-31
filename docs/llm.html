@@ -1,6 +1,6 @@
 ---
 
-title: LLM
+title: LLM Embedding Support
 
 
 keywords: fastai
@@ -29,6 +29,33 @@ nb_path: "nbs/3_llm.ipynb"
 </div>
     {% endraw %}
 
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>This module provides text embedding capabilities for Large Language Models, specifically supporting Chinese text processing.</p>
+<h2 id="Overview">Overview<a class="anchor-link" href="#Overview"> </a></h2><p>The LLM module offers:</p>
+<ul>
+<li><strong>Text Embeddings</strong>: Generate text embeddings using SentenceTransformer models</li>
+<li><strong>Chinese Language Support</strong>: Optimized for Chinese text with GanymedeNil/text2vec-large-chinese</li>
+<li><strong>OpenAI API Mocking</strong>: Mock OpenAI embedding APIs for testing purposes</li>
+<li><strong>PyTest Integration</strong>: Fixtures for embedding-related testing</li>
+</ul>
+<h2 id="Key-Features">Key Features<a class="anchor-link" href="#Key-Features"> </a></h2><ul>
+<li>High-quality Chinese text embeddings</li>
+<li>OpenAI Embedding API compatibility</li>
+<li>Vector similarity operations</li>
+<li>Test fixture support for embeddings</li>
+</ul>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Embedding-Model-Setup">Embedding Model Setup<a class="anchor-link" href="#Embedding-Model-Setup"> </a></h2><p>Initialize the Chinese text embedding model for vector representations.</p>
+
+</div>
+</div>
+</div>
     {% raw %}
     
 <div class="cell border-box-sizing code_cell rendered">
@@ -61,6 +88,13 @@ nb_path: "nbs/3_llm.ipynb"
 </div>
     {% endraw %}
 
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="OpenAI-Embedding-API-Mock">OpenAI Embedding API Mock<a class="anchor-link" href="#OpenAI-Embedding-API-Mock"> </a></h2><p>Mock implementation of OpenAI's embedding API using the Chinese text model.</p>
+
+</div>
+</div>
+</div>
     {% raw %}
     
 <div class="cell border-box-sizing code_cell rendered">

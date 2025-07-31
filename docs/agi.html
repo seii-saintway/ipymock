@@ -1,6 +1,6 @@
 ---
 
-title: Chinese BabyAGI
+title: Chinese BabyAGI Implementation
 
 
 keywords: fastai
@@ -31,11 +31,29 @@ nb_path: "nbs/4_agi.ipynb"
 
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<hr>
+<p>This module implements a Chinese-language version of BabyAGI (Artificial General Intelligence) with internet search capabilities.</p>
+<h2 id="Overview">Overview<a class="anchor-link" href="#Overview"> </a></h2><p>The AGI module provides:</p>
 <ul>
-<li><a href="https://python.langchain.com/en/latest/use_cases/agents/baby_agi.html">BabyAGI with LangChain and Faiss</a></li>
-<li><a href="https://python.langchain.com/en/latest/use_cases/autonomous_agents/baby_agi.html">BabyAGI - LangChain Module</a></li>
+<li><strong>Autonomous Task Planning</strong>: Automatically create and prioritize tasks toward objectives</li>
+<li><strong>Chinese Language Processing</strong>: Full Chinese language support for prompts and responses</li>
+<li><strong>Internet Search Integration</strong>: DuckDuckGo search capabilities for real-time information</li>
+<li><strong>Vector Storage</strong>: FAISS-based memory system for task context and results</li>
+<li><strong>LangChain Integration</strong>: Built on LangChain framework for LLM orchestration</li>
 </ul>
+<h2 id="Key-Components">Key Components<a class="anchor-link" href="#Key-Components"> </a></h2><ul>
+<li>Task creation and prioritization chains</li>
+<li>Task execution with tool integration</li>
+<li>Vector-based memory and context retrieval</li>
+<li>Chinese prompt templates and output parsing</li>
+<li>Web search tool integration</li>
+</ul>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Reference-Documentation">Reference Documentation<a class="anchor-link" href="#Reference-Documentation"> </a></h2><p>Links to related BabyAGI implementations and LangChain resources:</p>
 
 </div>
 </div>
@@ -59,6 +77,20 @@ nb_path: "nbs/4_agi.ipynb"
 </div>
     {% endraw %}
 
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Vector-Storage-Setup">Vector Storage Setup<a class="anchor-link" href="#Vector-Storage-Setup"> </a></h2><p>Initialize the Chinese text embedding model and FAISS vector database for task memory.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="LangChain-Components">LangChain Components<a class="anchor-link" href="#LangChain-Components"> </a></h2><p>Implementation of BabyAGI chains for task creation, prioritization, and execution in Chinese.</p>
+
+</div>
+</div>
+</div>
     {% raw %}
     
 <div class="cell border-box-sizing code_cell rendered">
@@ -94,12 +126,19 @@ nb_path: "nbs/4_agi.ipynb"
 
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<hr>
-<p>With Tools</p>
+<h2 id="Tool-Integration">Tool Integration<a class="anchor-link" href="#Tool-Integration"> </a></h2><p>Adding search capabilities and other tools to enhance AGI functionality.</p>
+<p><strong>References:</strong></p>
 <ul>
 <li><a href="https://python.langchain.com/en/latest/use_cases/autonomous_agents/baby_agi_with_agent.html">BabyAGI with Tools - LangChain Module</a></li>
 <li><a href="https://github.com/hwchase17/langchain/tree/master/langchain/utilities">LangChain Utilities</a></li>
 </ul>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Tool-Integration">Tool Integration<a class="anchor-link" href="#Tool-Integration"> </a></h2><p>Adding search capabilities and other tools to enhance AGI functionality.</p>
 
 </div>
 </div>
@@ -113,15 +152,20 @@ nb_path: "nbs/4_agi.ipynb"
 
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<hr>
-<p>Executor</p>
+<h2 id="Agent-Executor-Setup">Agent Executor Setup<a class="anchor-link" href="#Agent-Executor-Setup"> </a></h2><p>Configuration of the LangChain agent executor with Chinese language support.</p>
+<p><strong>References:</strong></p>
 <ul>
-<li><a href="https://sj-langchain.readthedocs.io/en/latest/modules/agents/examples/custom_agent.html">LangChain ZeroShotAgent</a><ul>
+<li><a href="https://sj-langchain.readthedocs.io/en/latest/modules/agents/examples/custom_agent.html">LangChain ZeroShotAgent</a></li>
 <li><a href="https://github.com/hwchase17/langchain/blob/master/langchain/agents/mrkl/base.py">Source Code</a></li>
 <li><a href="https://arxiv.org/pdf/2205.00445.pdf">Modular Reasoning, Knowledge and Language system</a></li>
 </ul>
-</li>
-</ul>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Agent-Executor-Setup">Agent Executor Setup<a class="anchor-link" href="#Agent-Executor-Setup"> </a></h2><p>Configuration of the LangChain agent executor with Chinese language support.</p>
 
 </div>
 </div>
@@ -175,7 +219,7 @@ nb_path: "nbs/4_agi.ipynb"
 
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p><a href="https://github.com/hwchase17/langchain/blob/master/langchain/agents/mrkl/output_parser.py">LangChain MRKLOutputParser</a></p>
+<p><strong>Reference:</strong> <a href="https://github.com/hwchase17/langchain/blob/master/langchain/agents/mrkl/output_parser.py">LangChain MRKLOutputParser</a></p>
 
 </div>
 </div>
@@ -223,8 +267,14 @@ nb_path: "nbs/4_agi.ipynb"
 
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<hr>
-<p>Running the BabyAGI</p>
+<h2 id="BabyAGI-Execution">BabyAGI Execution<a class="anchor-link" href="#BabyAGI-Execution"> </a></h2><p>Main execution functions for running the Chinese BabyAGI system.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="BabyAGI-Execution">BabyAGI Execution<a class="anchor-link" href="#BabyAGI-Execution"> </a></h2><p>Main execution functions for running the Chinese BabyAGI system.</p>
 
 </div>
 </div>

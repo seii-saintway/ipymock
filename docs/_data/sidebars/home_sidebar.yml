@@ -10,28 +10,28 @@ entries:
       title: Overview
       url: /
     - output: web,pdf
-      title: iPyTest
+      title: iPyTest - Core PyTest Integration
       url: core.html
     - output: web,pdf
-      title: Browser Automation
+      title: Browser Automation Module
       url: automation.html
     - output: web,pdf
-      title: Mock OpenAI API
+      title: OpenAI API Mocking Through Browser Automation
       url: browser.html
     - output: web,pdf
-      title: LLM
+      title: LLM Embedding Support
       url: llm.html
     - output: web,pdf
-      title: Chinese BabyAGI
+      title: Chinese BabyAGI Implementation
       url: agi.html
     - output: web,pdf
-      title: Document Readers
+      title: Document Processing Tools
       url: tools_document.html
     - output: web,pdf
-      title: DuckDuckGo Search API
+      title: DuckDuckGo Search Integration
       url: tools_duckduckgo.html
     - output: web,pdf
-      title: Annotating Kanji with Hiragana
+      title: Annotating Kanji with Hiragana - Japanese Text Processing with PyKNP
       url: tools_pyknp.html
     output: web
     title: ipymock
